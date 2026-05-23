@@ -1,0 +1,57 @@
+{{define "pages/customers.html"}}<!DOCTYPE html>
+<html lang="en">
+<head>{{template "partials/head.html" .}}</head>
+<body class="bg-gray-100 min-h-screen">
+{{template "partials/nav.html" .}}
+<div class="max-w-7xl mx-auto px-4 py-8">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold text-gray-900">Customers</h2>
+    <a href="/customers/new" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">+ New Customer</a>
+  </div>
+
+  {{if .FlashError}}
+  <div class="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">{{.FlashError}}</div>
+  {{end}}
+
+  <form method="GET" class="mb-4 flex gap-2">
+    <input type="text" name="q" value="{{.Search}}" placeholder="Search by name or phone…"
+      class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+    <button class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg text-sm transition">Search</button>
+    {{if .Search}}<a href="/customers" class="px-4 py-2 rounded-lg text-sm border border-gray-300 hover:bg-gray-100 transition">Clear</a>{{end}}
+  </form>
+
+  <div class="bg-white rounded-xl shadow overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">#</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Name</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Phone</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Registered</th>
+          <th class="px-4 py-3 text-right font-semibold text-gray-600">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {{range $i, $c := .Customers}}
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3 text-gray-400">{{add $i 1}}</td>
+          <td class="px-4 py-3 font-medium text-gray-900">{{$c.Name}}</td>
+          <td class="px-4 py-3 text-gray-600">{{$c.Phone}}</td>
+          <td class="px-4 py-3 text-gray-400">{{formatDate $c.CreatedAt}}</td>
+          <td class="px-4 py-3 text-right space-x-3">
+            <a href="/customers/{{$c.ID}}/edit" class="text-blue-600 hover:underline">Edit</a>
+            <form method="POST" action="/customers/{{$c.ID}}/delete" class="inline"
+              onsubmit="return confirm('Delete {{$c.Name}}? This cannot be undone.')">
+              <button class="text-red-500 hover:underline">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {{else}}
+        <tr><td colspan="5" class="px-4 py-10 text-center text-gray-400">No customers found.</td></tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+</div>
+</body>
+</html>{{end}}

@@ -1,0 +1,26 @@
+{{define "partials/head.html"}}
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>{{.PageTitle}} — Room9 POS</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          pos: { DEFAULT: '#10b981', dark: '#059669', light: '#d1fae5' }
+        }
+      }
+    }
+  }
+</script>
+<style>
+  @media print { .no-print { display: none !important; } }
+  .sidebar-link { @apply flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-700 hover:text-white transition-all text-sm font-medium; }
+  .sidebar-link.active { @apply bg-emerald-600 text-white shadow-lg; }
+  .table-available { border-color: #10b981; }
+  .table-occupied  { border-color: #ef4444; }
+  .table-maintenance { border-color: #f59e0b; }
+</style>
+{{end}}

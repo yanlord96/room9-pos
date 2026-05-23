@@ -1,0 +1,72 @@
+{{define "pages/receipt.html"}}<!DOCTYPE html>
+<html lang="en">
+<head>{{template "partials/head.html" .}}</head>
+<body class="bg-gray-100 min-h-screen">
+{{template "partials/nav.html" .}}
+<div class="max-w-2xl mx-auto px-4 py-8">
+  <div class="no-print flex items-center justify-between mb-6">
+    <a href="/bookings" class="text-sm text-gray-500 hover:text-gray-700">← Back to Bookings</a>
+    <button onclick="window.print()"
+      class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+      Print Receipt
+    </button>
+  </div>
+
+  <div class="bg-white rounded-xl shadow p-8" id="receipt">
+    <div class="text-center mb-6 border-b pb-6">
+      <h1 class="text-2xl font-bold text-gray-900">Room9 Billiard</h1>
+      <p class="text-gray-500 text-sm mt-1">Receipt</p>
+      <p class="text-gray-400 text-xs mt-1">Session #{{.Session.ID}}</p>
+    </div>
+
+    <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mb-6">
+      <span class="text-gray-500">Customer</span>
+      <span class="font-medium text-gray-900">{{.Session.CustomerName}}</span>
+      <span class="text-gray-500">Phone</span>
+      <span class="text-gray-700">{{.Session.CustomerPhone}}</span>
+      <span class="text-gray-500">Table</span>
+      <span class="font-medium text-gray-900">{{.Session.TableName}}</span>
+      <span class="text-gray-500">Start</span>
+      <span class="text-gray-700">{{formatDateTime .Session.StartedAt}}</span>
+      <span class="text-gray-500">End</span>
+      <span class="text-gray-700">{{formatDateTimePtr .Session.EndedAt}}</span>
+      <span class="text-gray-500">Duration</span>
+      <span class="font-medium text-gray-900">{{.Duration}}</span>
+    </div>
+
+    {{if .Orders}}
+    <div class="mb-4">
+      <h3 class="text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide">F&amp;B Orders</h3>
+      <div class="divide-y divide-gray-100">
+        {{range .Orders}}
+        <div class="flex justify-between py-1.5 text-sm">
+          <span class="text-gray-700">{{.ItemName}} × {{.Quantity}}</span>
+          <span class="font-medium text-gray-800">{{formatRp (mul (itof .Quantity) .UnitPrice)}}</span>
+        </div>
+        {{end}}
+      </div>
+    </div>
+    {{end}}
+
+    <div class="border-t border-gray-200 pt-4 space-y-1">
+      <div class="flex justify-between text-sm text-gray-600">
+        <span>Table charge</span>
+        <span>{{formatRp .Session.TableCharge}}</span>
+      </div>
+      <div class="flex justify-between text-sm text-gray-600">
+        <span>F&amp;B charge</span>
+        <span>{{formatRp .Session.FnbCharge}}</span>
+      </div>
+      <div class="flex justify-between text-lg font-bold text-gray-900 border-t pt-3 mt-2">
+        <span>TOTAL</span>
+        <span>{{formatRp .Session.TotalAmount}}</span>
+      </div>
+    </div>
+
+    <div class="text-center mt-8 text-xs text-gray-400">
+      Thank you for playing at Room9!
+    </div>
+  </div>
+</div>
+</body>
+</html>{{end}}

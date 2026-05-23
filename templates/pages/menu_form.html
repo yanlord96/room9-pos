@@ -1,0 +1,67 @@
+{{define "pages/menu_form.html"}}<!DOCTYPE html>
+<html lang="en">
+<head>{{template "partials/head.html" .}}</head>
+<body class="bg-gray-100 min-h-screen">
+{{template "partials/nav.html" .}}
+<div class="max-w-lg mx-auto px-4 py-8">
+  <div class="mb-6">
+    <a href="/menu" class="text-sm text-gray-500 hover:text-gray-700">← Back to Menu</a>
+    <h2 class="text-2xl font-bold text-gray-900 mt-2">{{.Title}}</h2>
+  </div>
+
+  {{if .Error}}
+  <div class="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">{{.Error}}</div>
+  {{end}}
+
+  <div class="bg-white rounded-xl shadow p-6">
+    <form method="POST" action="{{.Action}}" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Item Name <span class="text-red-500">*</span></label>
+        <input type="text" name="name" required
+          value="{{if .Item}}{{.Item.Name}}{{end}}"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          placeholder="e.g. Mineral Water"/>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Category <span class="text-red-500">*</span></label>
+        <select name="category" required
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white">
+          <option value="">Select category…</option>
+          {{$cur := ""}}{{if .Item}}{{$cur = .Item.Category}}{{end}}
+          <option value="Food" {{if eq $cur "Food"}}selected{{end}}>Food</option>
+          <option value="Beverage" {{if eq $cur "Beverage"}}selected{{end}}>Beverage</option>
+          <option value="Snack" {{if eq $cur "Snack"}}selected{{end}}>Snack</option>
+          <option value="Other" {{if eq $cur "Other"}}selected{{end}}>Other</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Price (Rp) <span class="text-red-500">*</span></label>
+        <input type="number" name="price" required min="0" step="500"
+          value="{{if .Item}}{{printf "%.0f" .Item.Price}}{{end}}"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          placeholder="e.g. 10000"/>
+      </div>
+      {{if .Item}}
+      <div class="flex items-center gap-3">
+        <label class="text-sm font-medium text-gray-700">Available</label>
+        <select name="is_available"
+          class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white">
+          <option value="1" {{if .Item.IsAvailable}}selected{{end}}>Yes</option>
+          <option value="0" {{if not .Item.IsAvailable}}selected{{end}}>No</option>
+        </select>
+      </div>
+      {{end}}
+      <div class="flex gap-3 pt-2">
+        <button type="submit"
+          class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg transition">
+          Save Item
+        </button>
+        <a href="/menu" class="flex-1 text-center py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition text-gray-700">
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+</body>
+</html>{{end}}

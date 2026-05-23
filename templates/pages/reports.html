@@ -1,0 +1,107 @@
+{{define "pages/reports.html"}}<!DOCTYPE html>
+<html lang="en">
+<head>{{template "partials/head.html" .}}</head>
+<body class="bg-gray-100 min-h-screen">
+{{template "partials/nav.html" .}}
+<div class="max-w-7xl mx-auto px-4 py-8">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold text-gray-900">Financial Reports</h2>
+    <a href="/reports/print?period={{.Period}}&year={{.Year}}&month={{.Month}}" target="_blank"
+      class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+      Print / Export PDF
+    </a>
+  </div>
+
+  <!-- Filters -->
+  <form method="GET" class="bg-white rounded-xl shadow p-4 mb-6 flex flex-wrap gap-4 items-end">
+    <div>
+      <label class="block text-xs font-medium text-gray-600 mb-1">Period</label>
+      <select name="period"
+        class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 bg-white">
+        <option value="daily"   {{if eq .Period "daily"}}selected{{end}}>Daily</option>
+        <option value="weekly"  {{if eq .Period "weekly"}}selected{{end}}>Weekly</option>
+        <option value="monthly" {{if eq .Period "monthly"}}selected{{end}}>Monthly</option>
+        <option value="yearly"  {{if eq .Period "yearly"}}selected{{end}}>Yearly</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-600 mb-1">Year</label>
+      <input type="number" name="year" value="{{.Year}}" min="2020" max="2099"
+        class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"/>
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-600 mb-1">Month</label>
+      <select name="month"
+        class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 bg-white">
+        {{range $i, $m := .Months}}
+        <option value="{{add $i 1}}" {{if eq (add $i 1) $.Month}}selected{{end}}>{{$m}}</option>
+        {{end}}
+      </select>
+    </div>
+    <button type="submit"
+      class="bg-yellow-500 hover:bg-yellow-600 text-white px-5 py-2 rounded-lg text-sm font-semibold transition">
+      Apply
+    </button>
+  </form>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white rounded-xl shadow p-5">
+      <p class="text-xs text-gray-500 uppercase tracking-wide">Sessions</p>
+      <p class="text-3xl font-bold text-gray-800 mt-1">{{.GrandSessions}}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow p-5">
+      <p class="text-xs text-gray-500 uppercase tracking-wide">Table Revenue</p>
+      <p class="text-2xl font-bold text-green-700 mt-1">{{formatRp .GrandTable}}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow p-5">
+      <p class="text-xs text-gray-500 uppercase tracking-wide">F&amp;B Revenue</p>
+      <p class="text-2xl font-bold text-blue-700 mt-1">{{formatRp .GrandFnb}}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow p-5">
+      <p class="text-xs text-gray-500 uppercase tracking-wide">Total Revenue</p>
+      <p class="text-2xl font-bold text-yellow-600 mt-1">{{formatRp .GrandTotal}}</p>
+    </div>
+  </div>
+
+  <!-- Data Table -->
+  <div class="bg-white rounded-xl shadow overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Period</th>
+          <th class="px-4 py-3 text-right font-semibold text-gray-600">Sessions</th>
+          <th class="px-4 py-3 text-right font-semibold text-gray-600">Table</th>
+          <th class="px-4 py-3 text-right font-semibold text-gray-600">F&amp;B</th>
+          <th class="px-4 py-3 text-right font-semibold text-gray-600">Total</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {{range .Summaries}}
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3 font-medium text-gray-900">{{.Period}}</td>
+          <td class="px-4 py-3 text-right text-gray-700">{{.Sessions}}</td>
+          <td class="px-4 py-3 text-right text-gray-700">{{formatRp .TableCharge}}</td>
+          <td class="px-4 py-3 text-right text-gray-700">{{formatRp .FnbCharge}}</td>
+          <td class="px-4 py-3 text-right font-semibold text-gray-900">{{formatRp .Total}}</td>
+        </tr>
+        {{else}}
+        <tr><td colspan="5" class="px-4 py-10 text-center text-gray-400">No completed sessions for this period.</td></tr>
+        {{end}}
+      </tbody>
+      {{if .Summaries}}
+      <tfoot class="bg-gray-50 border-t-2 border-gray-300">
+        <tr>
+          <td class="px-4 py-3 font-bold text-gray-900">TOTAL</td>
+          <td class="px-4 py-3 text-right font-bold text-gray-900">{{.GrandSessions}}</td>
+          <td class="px-4 py-3 text-right font-bold text-gray-900">{{formatRp .GrandTable}}</td>
+          <td class="px-4 py-3 text-right font-bold text-gray-900">{{formatRp .GrandFnb}}</td>
+          <td class="px-4 py-3 text-right font-bold text-yellow-600 text-base">{{formatRp .GrandTotal}}</td>
+        </tr>
+      </tfoot>
+      {{end}}
+    </table>
+  </div>
+</div>
+</body>
+</html>{{end}}

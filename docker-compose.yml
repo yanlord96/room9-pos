@@ -1,0 +1,19 @@
+services:
+  room9:
+    build: .
+    container_name: room9-pos
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data
+    environment:
+      - PORT=8080
+      - DB_PATH=/data/room9.db
+      - GIN_MODE=release
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 256M
+

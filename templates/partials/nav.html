@@ -1,0 +1,105 @@
+{{define "partials/nav.html"}}
+<aside class="no-print w-60 shrink-0 bg-slate-900 flex flex-col h-screen sticky top-0">
+  <!-- Brand -->
+  <div class="px-5 py-5 border-b border-slate-700">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 bg-emerald-500 rounded-xl flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" stroke-width="2"/>
+          <circle cx="12" cy="12" r="3" stroke-width="2"/>
+          <line x1="12" y1="3" x2="12" y2="6" stroke-width="2"/>
+          <line x1="12" y1="18" x2="12" y2="21" stroke-width="2"/>
+          <line x1="3" y1="12" x2="6" y2="12" stroke-width="2"/>
+          <line x1="18" y1="12" x2="21" y2="12" stroke-width="2"/>
+        </svg>
+      </div>
+      <div>
+        <p class="text-white font-bold text-base leading-tight">Room9</p>
+        <p class="text-slate-400 text-xs">Billiard POS</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nav Links -->
+  <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+    <p class="text-slate-500 text-xs font-semibold uppercase tracking-widest px-4 mb-2">Operations</p>
+
+    <a href="/" class="sidebar-link {{if eq .PageTitle "Dashboard"}}active{{end}}">
+      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+      </svg>
+      Dashboard
+    </a>
+
+    <a href="/bookings" class="sidebar-link {{if eq .PageTitle "Bookings"}}active{{end}}">
+      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" stroke-width="2"/>
+        <circle cx="12" cy="12" r="3" stroke-width="2"/>
+      </svg>
+      Tables &amp; Sessions
+    </a>
+
+    <a href="/customers" class="sidebar-link {{if eq .PageTitle "Customers"}}active{{end}}">
+      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+      </svg>
+      Customers
+    </a>
+
+    <div class="pt-3 pb-1">
+      <p class="text-slate-500 text-xs font-semibold uppercase tracking-widest px-4 mb-2">Management</p>
+    </div>
+
+    <a href="/menu" class="sidebar-link {{if eq .PageTitle "Menu"}}active{{end}}">
+      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+      </svg>
+      Food &amp; Beverages
+    </a>
+
+    <a href="/tables" class="sidebar-link {{if eq .PageTitle "Pool Tables"}}active{{end}}">
+      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <rect x="3" y="6" width="18" height="12" rx="2" stroke-width="2"/>
+        <circle cx="6" cy="9" r="1" fill="currentColor"/>
+        <circle cx="18" cy="9" r="1" fill="currentColor"/>
+        <circle cx="6" cy="15" r="1" fill="currentColor"/>
+        <circle cx="18" cy="15" r="1" fill="currentColor"/>
+      </svg>
+      Pool Tables
+    </a>
+
+    {{if eq .User.Role "admin"}}
+    <div class="pt-3 pb-1">
+      <p class="text-slate-500 text-xs font-semibold uppercase tracking-widest px-4 mb-2">Admin</p>
+    </div>
+    <a href="/reports" class="sidebar-link {{if eq .PageTitle "Reports"}}active{{end}}">
+      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+      Reports
+    </a>
+    {{end}}
+  </nav>
+
+  <!-- User Info -->
+  <div class="px-3 py-4 border-t border-slate-700">
+    <div class="flex items-center gap-3 px-2 mb-3">
+      <div class="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
+        {{slice .User.Name 0 1}}
+      </div>
+      <div class="min-w-0">
+        <p class="text-white text-sm font-medium truncate">{{.User.Name}}</p>
+        <p class="text-xs {{if eq .User.Role "admin"}}text-amber-400{{else}}text-slate-400{{end}} capitalize">{{.User.Role}}</p>
+      </div>
+    </div>
+    <form method="POST" action="/logout">
+      <button class="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-slate-400 hover:bg-slate-700 hover:text-white transition text-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </svg>
+        Sign Out
+      </button>
+    </form>
+  </div>
+</aside>
+{{end}}

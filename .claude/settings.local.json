@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go mod *)",
+      "Read(//usr/local/go/**)",
+      "Read(//opt/homebrew/bin/**)",
+      "Bash(docker build *)",
+      "Bash(open -a Docker)",
+      "Bash(docker info *)",
+      "Bash(docker run *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/login)",
+      "Bash(docker stop *)",
+      "Bash(docker rm *)",
+      "Bash(curl -s -c /tmp/room9_cookies.txt -o /dev/null -w '%{http_code}' -X POST http://localhost:8080/login -d 'username=admin&password=admin123' -L)",
+      "Bash(curl -s -c /tmp/room9_cookies.txt -o /dev/null -w 'login: %{http_code}\\\\n' -X POST http://localhost:8080/login -d 'username=admin&password=admin123')",
+      "Bash(curl -s -b /tmp/room9_cookies.txt -o /dev/null -w 'dashboard: %{http_code}\\\\n' http://localhost:8080/)",
+      "Bash(curl -s -b /tmp/room9_cookies.txt -o /dev/null -w 'bookings: %{http_code}\\\\n' http://localhost:8080/bookings)",
+      "Bash(curl -s -b /tmp/room9_cookies.txt -o /dev/null -w 'customers: %{http_code}\\\\n' http://localhost:8080/customers)",
+      "Bash(curl -s -b /tmp/room9_cookies.txt -o /dev/null -w 'reports: %{http_code}\\\\n' http://localhost:8080/reports)",
+      "Bash(curl -s -c /tmp/staff_cookies.txt -X POST http://localhost:8080/login -d 'username=staff&password=admin123' -o /dev/null -w '')",
+      "Bash(curl -s -b /tmp/staff_cookies.txt -o /dev/null -w 'staff-reports \\(expect 403\\): %{http_code}\\\\n' http://localhost:8080/reports)",
+      "Bash(curl -s -b /tmp/room9_cookies.txt -X POST http://localhost:8080/customers -d 'name=John+Doe&phone=08123456789' -o /dev/null -w 'create customer: %{http_code}\\\\n')",
+      "Bash(curl -s -b /tmp/room9_cookies.txt http://localhost:8080/customers)",
+      "Bash(curl -s -b /tmp/room9_cookies.txt -X POST http://localhost:8080/tables -d 'name=Table+1&hourly_rate=30000' -o /dev/null -w 'create table: %{http_code}\\\\n')",
+      "Bash(curl -s -b /tmp/room9_cookies.txt -X POST http://localhost:8080/menu -d 'name=Mineral+Water&category=Beverage&price=5000' -o /dev/null -w 'create menu item: %{http_code}\\\\n')",
+      "Bash(curl -s -c /tmp/room9_cookies.txt -X POST http://localhost:8080/login -d 'username=admin&password=admin123' -o /dev/null)",
+      "Bash(curl -s -b /tmp/room9_cookies.txt -X POST http://localhost:8080/customers -d 'name=John+Doe&phone=08123456789' -o /dev/null)",
+      "Bash(curl -s -b /tmp/room9_cookies.txt -X POST http://localhost:8080/tables -d 'name=Table+1&hourly_rate=30000' -o /dev/null)",
+      "Bash(curl -s -b /tmp/room9_cookies.txt -X POST http://localhost:8080/menu -d 'name=Mineral+Water&category=Beverage&price=5000' -o /dev/null)",
+      "Bash(docker exec *)",
+      "Bash(wait)",
+      "Bash(docker-compose -f /Users/ianperdana/Documents/x-code/room9/docker-compose.yml up --build -d)",
+      "Bash(docker-compose -f /Users/ianperdana/Documents/x-code/room9/docker-compose.yml down)",
+      "Bash(curl -s -o /dev/null -w \"login page: %{http_code}\\\\n\" http://localhost:8080/login)",
+      "Bash(docker stats *)"
+    ]
+  }
+}

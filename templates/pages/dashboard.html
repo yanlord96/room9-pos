@@ -1,0 +1,123 @@
+{{define "pages/dashboard.html"}}<!DOCTYPE html>
+<html lang="en">
+<head>{{template "partials/head.html" .}}</head>
+<body class="flex h-screen bg-slate-100 overflow-hidden text-slate-800">
+{{template "partials/nav.html" .}}
+<main class="flex-1 overflow-y-auto">
+  <!-- Top bar -->
+  <div class="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+    <div>
+      <h1 class="text-xl font-bold text-slate-900">Dashboard</h1>
+      <p class="text-xs text-slate-400 mt-0.5" id="clock"></p>
+    </div>
+    <a href="/bookings"
+      class="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition shadow-sm shadow-emerald-200">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      New Booking
+    </a>
+  </div>
+
+  <div class="p-8">
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-11 h-11 bg-red-50 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="2"/><circle cx="12" cy="12" r="3" stroke-width="2"/></svg>
+          </div>
+          <span class="text-xs font-medium text-red-500 bg-red-50 px-2 py-1 rounded-lg">Live</span>
+        </div>
+        <p class="text-3xl font-black text-slate-900">{{.ActiveSessions}}</p>
+        <p class="text-sm text-slate-500 mt-1">Active Sessions</p>
+      </div>
+
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-11 h-11 bg-emerald-50 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+        </div>
+        <p class="text-3xl font-black text-slate-900">{{.AvailableTables}}<span class="text-lg text-slate-400 font-medium">/{{.TotalTables}}</span></p>
+        <p class="text-sm text-slate-500 mt-1">Tables Available</p>
+      </div>
+
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 xl:col-span-2">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-11 h-11 bg-blue-50 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <span class="text-xs text-slate-400">Today</span>
+        </div>
+        <p class="text-3xl font-black text-slate-900">{{formatRp .TodayRevenue}}</p>
+        <p class="text-sm text-slate-500 mt-1">Revenue Today</p>
+      </div>
+    </div>
+
+    <!-- Quick Actions + Status -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <!-- Quick actions -->
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+        <h3 class="font-semibold text-slate-700 mb-4 text-sm uppercase tracking-wide">Quick Actions</h3>
+        <div class="space-y-2">
+          <a href="/bookings" class="flex items-center gap-3 p-3.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 transition group">
+            <div class="w-9 h-9 bg-emerald-500 rounded-lg flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            </div>
+            <div>
+              <p class="font-semibold text-emerald-800 text-sm">Start Booking</p>
+              <p class="text-xs text-emerald-600">Select table &amp; customer</p>
+            </div>
+          </a>
+          <a href="/customers/new" class="flex items-center gap-3 p-3.5 rounded-xl bg-blue-50 hover:bg-blue-100 transition">
+            <div class="w-9 h-9 bg-blue-500 rounded-lg flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+            </div>
+            <div>
+              <p class="font-semibold text-blue-800 text-sm">New Customer</p>
+              <p class="text-xs text-blue-600">Register walk-in</p>
+            </div>
+          </a>
+          {{if eq .User.Role "admin"}}
+          <a href="/reports" class="flex items-center gap-3 p-3.5 rounded-xl bg-amber-50 hover:bg-amber-100 transition">
+            <div class="w-9 h-9 bg-amber-500 rounded-lg flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <div>
+              <p class="font-semibold text-amber-800 text-sm">View Reports</p>
+              <p class="text-xs text-amber-600">Financial overview</p>
+            </div>
+          </a>
+          {{end}}
+        </div>
+      </div>
+
+      <!-- Manage -->
+      <div class="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+        <h3 class="font-semibold text-slate-700 mb-4 text-sm uppercase tracking-wide">Manage</h3>
+        <div class="grid grid-cols-3 gap-3">
+          <a href="/tables" class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-slate-100 hover:border-emerald-200 hover:bg-emerald-50 transition text-center group">
+            <svg class="w-7 h-7 text-slate-400 group-hover:text-emerald-500 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2" stroke-width="2"/><circle cx="6" cy="9" r="1" fill="currentColor"/><circle cx="18" cy="9" r="1" fill="currentColor"/><circle cx="6" cy="15" r="1" fill="currentColor"/><circle cx="18" cy="15" r="1" fill="currentColor"/></svg>
+            <span class="text-xs font-medium text-slate-600 group-hover:text-emerald-700">Pool Tables</span>
+          </a>
+          <a href="/menu" class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-slate-100 hover:border-emerald-200 hover:bg-emerald-50 transition text-center group">
+            <svg class="w-7 h-7 text-slate-400 group-hover:text-emerald-500 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            <span class="text-xs font-medium text-slate-600 group-hover:text-emerald-700">F&amp;B Menu</span>
+          </a>
+          <a href="/customers" class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-slate-100 hover:border-emerald-200 hover:bg-emerald-50 transition text-center group">
+            <svg class="w-7 h-7 text-slate-400 group-hover:text-emerald-500 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <span class="text-xs font-medium text-slate-600 group-hover:text-emerald-700">Customers</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('clock').textContent = now.toLocaleDateString('id-ID', {weekday:'long',year:'numeric',month:'long',day:'numeric'}) + '  ' + now.toLocaleTimeString('id-ID');
+  }
+  updateClock(); setInterval(updateClock, 1000);
+</script>
+</body>
+</html>{{end}}

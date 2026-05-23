@@ -1,0 +1,110 @@
+{{define "pages/session_detail.html"}}<!DOCTYPE html>
+<html lang="en">
+<head>{{template "partials/head.html" .}}</head>
+<body class="bg-gray-100 min-h-screen">
+{{template "partials/nav.html" .}}
+<div class="max-w-4xl mx-auto px-4 py-8">
+  <div class="mb-6 flex items-center justify-between">
+    <div>
+      <a href="/bookings" class="text-sm text-gray-500 hover:text-gray-700">← Back to Bookings</a>
+      <h2 class="text-2xl font-bold text-gray-900 mt-1">{{.Session.TableName}}</h2>
+      <p class="text-gray-500 text-sm">{{.Session.CustomerName}} &middot; {{.Session.CustomerPhone}}</p>
+    </div>
+    <span class="px-3 py-1 bg-red-100 text-red-700 text-sm font-semibold rounded-full">ACTIVE</span>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"
+       hx-get="/bookings/{{.SessionID}}" hx-trigger="every 15s" hx-target="closest div" hx-swap="outerHTML">
+    <div class="bg-white rounded-xl shadow p-5 text-center">
+      <p class="text-sm text-gray-500 mb-1">Duration</p>
+      <p class="text-2xl font-bold text-gray-800">{{.ElapsedHours}}h {{.ElapsedMinutes}}m</p>
+      <p class="text-xs text-gray-400 mt-1">Started {{formatDateTime .Session.StartedAt}}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow p-5 text-center">
+      <p class="text-sm text-gray-500 mb-1">Table Charge</p>
+      <p class="text-2xl font-bold text-green-700">{{formatRp .Session.TableCharge}}</p>
+      <p class="text-xs text-gray-400 mt-1">{{formatRp .Session.HourlyRate}}/hr prorated</p>
+    </div>
+    <div class="bg-white rounded-xl shadow p-5 text-center">
+      <p class="text-sm text-gray-500 mb-1">Grand Total</p>
+      <p class="text-2xl font-bold text-blue-700">{{formatRp .GrandTotal}}</p>
+      <p class="text-xs text-gray-400 mt-1">Table + F&amp;B</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Food & Beverage Orders -->
+    <div class="bg-white rounded-xl shadow p-6">
+      <h3 class="font-semibold text-gray-800 mb-4">F&amp;B Orders</h3>
+
+      <!-- Add Order Form -->
+      <form method="POST" action="/orders" class="flex gap-2 mb-4">
+        <input type="hidden" name="session_id" value="{{.SessionID}}"/>
+        <select name="menu_item_id" required
+          class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white">
+          <option value="">Select item…</option>
+          {{range .MenuItems}}
+          <option value="{{.ID}}">{{.Name}} ({{formatRp .Price}})</option>
+          {{end}}
+        </select>
+        <input type="number" name="quantity" value="1" min="1" max="99"
+          class="w-16 px-2 py-2 border border-gray-300 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-green-500"/>
+        <button type="submit"
+          class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition">
+          Add
+        </button>
+      </form>
+
+      <!-- Order List -->
+      <div class="divide-y divide-gray-100">
+        {{range .Orders}}
+        <div class="flex items-center justify-between py-2">
+          <div>
+            <p class="text-sm font-medium text-gray-800">{{.ItemName}}</p>
+            <p class="text-xs text-gray-400">{{.Quantity}} × {{formatRp .UnitPrice}}</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-sm font-semibold text-gray-700">{{formatRp (mul (itof .Quantity) .UnitPrice)}}</span>
+            <form method="POST" action="/orders/{{.ID}}/delete"
+              onsubmit="return confirm('Remove this item?')">
+              <button class="text-red-400 hover:text-red-600 text-xs">✕</button>
+            </form>
+          </div>
+        </div>
+        {{else}}
+        <p class="text-sm text-gray-400 py-4 text-center">No orders yet.</p>
+        {{end}}
+      </div>
+
+      {{if .Orders}}
+      <div class="mt-3 pt-3 border-t border-gray-200 flex justify-between text-sm font-semibold">
+        <span>F&amp;B Total</span>
+        <span class="text-gray-800">{{formatRp .FnbTotal}}</span>
+      </div>
+      {{end}}
+    </div>
+
+    <!-- End Session -->
+    <div class="bg-white rounded-xl shadow p-6 flex flex-col justify-between">
+      <div>
+        <h3 class="font-semibold text-gray-800 mb-4">End Session &amp; Checkout</h3>
+        <div class="space-y-2 text-sm text-gray-600 mb-6">
+          <div class="flex justify-between"><span>Table charge</span><span class="font-medium text-gray-800">{{formatRp .Session.TableCharge}}</span></div>
+          <div class="flex justify-between"><span>F&amp;B charge</span><span class="font-medium text-gray-800">{{formatRp .FnbTotal}}</span></div>
+          <div class="flex justify-between text-base font-bold text-gray-900 border-t pt-2 mt-2">
+            <span>Grand Total</span><span>{{formatRp .GrandTotal}}</span>
+          </div>
+        </div>
+      </div>
+      <form method="POST" action="/bookings/{{.SessionID}}/end"
+        onsubmit="return confirm('End session and checkout {{.Session.CustomerName}}? Total: {{formatRp .GrandTotal}}')">
+        <button type="submit"
+          class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition text-lg">
+          End Session &amp; Checkout
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+</body>
+</html>{{end}}

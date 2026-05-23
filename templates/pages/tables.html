@@ -1,0 +1,45 @@
+{{define "pages/tables.html"}}<!DOCTYPE html>
+<html lang="en">
+<head>{{template "partials/head.html" .}}</head>
+<body class="bg-gray-100 min-h-screen">
+{{template "partials/nav.html" .}}
+<div class="max-w-7xl mx-auto px-4 py-8">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold text-gray-900">Pool Tables</h2>
+    <a href="/tables/new" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">+ New Table</a>
+  </div>
+
+  {{if .FlashError}}
+  <div class="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">{{.FlashError}}</div>
+  {{end}}
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {{range .Tables}}
+    <div class="bg-white rounded-xl shadow p-5 flex flex-col gap-3">
+      <div class="flex items-start justify-between">
+        <div>
+          <h3 class="font-bold text-lg text-gray-900">{{.Name}}</h3>
+          <p class="text-sm text-gray-500 mt-0.5">{{formatRp .HourlyRate}} / hour</p>
+        </div>
+        <span class="px-2 py-1 rounded-full text-xs font-semibold
+          {{if eq .Status "available"}}bg-green-100 text-green-700
+          {{else if eq .Status "occupied"}}bg-red-100 text-red-700
+          {{else}}bg-yellow-100 text-yellow-700{{end}}">
+          {{.Status}}
+        </span>
+      </div>
+      <div class="flex gap-2 pt-1 border-t border-gray-100">
+        <a href="/tables/{{.ID}}/edit" class="flex-1 text-center text-sm py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 transition text-gray-700">Edit</a>
+        <form method="POST" action="/tables/{{.ID}}/delete" class="flex-1"
+          onsubmit="return confirm('Delete table {{.Name}}?')">
+          <button class="w-full text-sm py-1.5 rounded-lg border border-red-200 hover:bg-red-50 transition text-red-600">Delete</button>
+        </form>
+      </div>
+    </div>
+    {{else}}
+    <div class="col-span-3 py-10 text-center text-gray-400">No pool tables yet. Add one to get started.</div>
+    {{end}}
+  </div>
+</div>
+</body>
+</html>{{end}}

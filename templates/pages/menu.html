@@ -1,0 +1,56 @@
+{{define "pages/menu.html"}}<!DOCTYPE html>
+<html lang="en">
+<head>{{template "partials/head.html" .}}</head>
+<body class="bg-gray-100 min-h-screen">
+{{template "partials/nav.html" .}}
+<div class="max-w-7xl mx-auto px-4 py-8">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold text-gray-900">Food &amp; Beverages</h2>
+    <a href="/menu/new" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">+ New Item</a>
+  </div>
+
+  <div class="bg-white rounded-xl shadow overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">#</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Name</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Category</th>
+          <th class="px-4 py-3 text-right font-semibold text-gray-600">Price</th>
+          <th class="px-4 py-3 text-center font-semibold text-gray-600">Available</th>
+          <th class="px-4 py-3 text-right font-semibold text-gray-600">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {{range $i, $item := .Items}}
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3 text-gray-400">{{add $i 1}}</td>
+          <td class="px-4 py-3 font-medium text-gray-900">{{$item.Name}}</td>
+          <td class="px-4 py-3">
+            <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">{{$item.Category}}</span>
+          </td>
+          <td class="px-4 py-3 text-right font-medium">{{formatRp $item.Price}}</td>
+          <td class="px-4 py-3 text-center">
+            {{if $item.IsAvailable}}
+            <span class="inline-block w-2 h-2 rounded-full bg-green-500"></span>
+            {{else}}
+            <span class="inline-block w-2 h-2 rounded-full bg-gray-300"></span>
+            {{end}}
+          </td>
+          <td class="px-4 py-3 text-right space-x-3">
+            <a href="/menu/{{$item.ID}}/edit" class="text-blue-600 hover:underline">Edit</a>
+            <form method="POST" action="/menu/{{$item.ID}}/delete" class="inline"
+              onsubmit="return confirm('Delete {{$item.Name}}?')">
+              <button class="text-red-500 hover:underline">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {{else}}
+        <tr><td colspan="6" class="px-4 py-10 text-center text-gray-400">No menu items yet.</td></tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+</div>
+</body>
+</html>{{end}}
