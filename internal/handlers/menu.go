@@ -9,7 +9,7 @@ import (
 )
 
 func (h *Handler) APIMenuList(c *gin.Context) {
-	rows, err := h.db.Query(`SELECT id, name, category, price, is_available FROM menu_items ORDER BY category, name`)
+	rows, err := h.db.Query(`SELECT id, name, category, price, is_available, stock FROM menu_items ORDER BY category, name`)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -19,7 +19,7 @@ func (h *Handler) APIMenuList(c *gin.Context) {
 	items := []models.MenuItem{}
 	for rows.Next() {
 		var item models.MenuItem
-		rows.Scan(&item.ID, &item.Name, &item.Category, &item.Price, &item.IsAvailable)
+		rows.Scan(&item.ID, &item.Name, &item.Category, &item.Price, &item.IsAvailable, &item.Stock)
 		items = append(items, item)
 	}
 	c.JSON(http.StatusOK, gin.H{"items": items})
@@ -30,21 +30,25 @@ func (h *Handler) APIMenuCreate(c *gin.Context) {
 		Name     string  `json:"name" binding:"required"`
 		Category string  `json:"category" binding:"required"`
 		Price    float64 `json:"price" binding:"required"`
+		Stock    int     `json:"stock"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Name, category, and price are required"})
 		return
 	}
+	if body.Stock == 0 {
+		body.Stock = -1 // default unlimited
+	}
 
-	res, err := h.db.Exec(`INSERT INTO menu_items (name, category, price) VALUES (?, ?, ?)`,
-		body.Name, body.Category, body.Price)
+	res, err := h.db.Exec(`INSERT INTO menu_items (name, category, price, stock) VALUES (?, ?, ?, ?)`,
+		body.Name, body.Category, body.Price, body.Stock)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create item"})
 		return
 	}
 	id, _ := res.LastInsertId()
 
-	item := models.MenuItem{ID: int(id), Name: body.Name, Category: body.Category, Price: body.Price, IsAvailable: true}
+	item := models.MenuItem{ID: int(id), Name: body.Name, Category: body.Category, Price: body.Price, IsAvailable: true, Stock: body.Stock}
 	c.JSON(http.StatusCreated, item)
 }
 
@@ -55,6 +59,7 @@ func (h *Handler) APIMenuUpdate(c *gin.Context) {
 		Category    string  `json:"category" binding:"required"`
 		Price       float64 `json:"price" binding:"required"`
 		IsAvailable bool    `json:"is_available"`
+		Stock       int     `json:"stock"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "All fields required"})
@@ -66,8 +71,8 @@ func (h *Handler) APIMenuUpdate(c *gin.Context) {
 		avail = 1
 	}
 	res, err := h.db.Exec(
-		`UPDATE menu_items SET name=?, category=?, price=?, is_available=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
-		body.Name, body.Category, body.Price, avail, id,
+		`UPDATE menu_items SET name=?, category=?, price=?, is_available=?, stock=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
+		body.Name, body.Category, body.Price, avail, body.Stock, id,
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update"})
@@ -79,7 +84,7 @@ func (h *Handler) APIMenuUpdate(c *gin.Context) {
 		return
 	}
 
-	item := models.MenuItem{Name: body.Name, Category: body.Category, Price: body.Price, IsAvailable: body.IsAvailable}
+	item := models.MenuItem{Name: body.Name, Category: body.Category, Price: body.Price, IsAvailable: body.IsAvailable, Stock: body.Stock}
 	c.JSON(http.StatusOK, item)
 }
 

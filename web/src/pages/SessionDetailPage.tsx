@@ -200,36 +200,47 @@ function MenuItemCard({
   item, onAdd, isPending,
 }: { item: MenuItem; onAdd: (qty: number) => void; isPending: boolean }) {
   const [qty, setQty] = useState(1)
+  const outOfStock = item.stock !== -1 && item.stock === 0
+  const lowStock = item.stock !== -1 && item.stock > 0 && item.stock <= 5
 
   return (
-    <div className="card p-3 space-y-2">
+    <div className={`card p-3 space-y-2 ${outOfStock ? 'opacity-50' : ''}`}>
       <div>
         <p className="text-sm font-medium text-white leading-tight">{item.name}</p>
-        <p className="text-xs text-brand-400 font-semibold">{formatRp(item.price)}</p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-brand-400 font-semibold">{formatRp(item.price)}</p>
+          {item.stock !== -1 && (
+            <span className={`text-xs font-medium ${outOfStock ? 'text-red-400' : lowStock ? 'text-yellow-400' : 'text-gray-500'}`}>
+              {outOfStock ? 'Habis' : `Stok: ${item.stock}`}
+            </span>
+          )}
+        </div>
       </div>
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-1 rounded-lg bg-gray-800 p-0.5">
           <button
             onClick={() => setQty(Math.max(1, qty - 1))}
-            className="p-1 text-gray-400 hover:text-white"
+            disabled={outOfStock}
+            className="p-1 text-gray-400 hover:text-white disabled:opacity-30"
           >
             <Minus className="h-3 w-3" />
           </button>
           <span className="w-6 text-center text-xs font-medium text-white">{qty}</span>
           <button
-            onClick={() => setQty(qty + 1)}
-            className="p-1 text-gray-400 hover:text-white"
+            onClick={() => setQty(Math.min(item.stock === -1 ? 99 : item.stock, qty + 1))}
+            disabled={outOfStock}
+            className="p-1 text-gray-400 hover:text-white disabled:opacity-30"
           >
             <Plus className="h-3 w-3" />
           </button>
         </div>
         <button
           onClick={() => { onAdd(qty); setQty(1) }}
-          disabled={isPending}
+          disabled={isPending || outOfStock}
           className="btn-primary btn-sm flex-1"
         >
           <ShoppingCart className="h-3 w-3" />
-          Add
+          {outOfStock ? 'Habis' : 'Add'}
         </button>
       </div>
     </div>

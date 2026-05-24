@@ -13,12 +13,15 @@ import TablesPage from '@/pages/TablesPage'
 import ReportsPage from '@/pages/ReportsPage'
 import PaymentsPage from '@/pages/PaymentsPage'
 import UsersPage from '@/pages/UsersPage'
+import TableDisplayPage from '@/pages/TableDisplayPage'
+import ExpensesPage from '@/pages/ExpensesPage'
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/display" element={<TableDisplayPage />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
             <Route index element={<Navigate to="/dashboard" replace />} />
@@ -31,6 +34,7 @@ export default function App() {
             <Route path="/tables" element={<TablesPage />} />
             <Route path="/payments" element={<AdminRoute><PaymentsPage /></AdminRoute>} />
             <Route path="/reports" element={<AdminRoute><ReportsPage /></AdminRoute>} />
+            <Route path="/expenses" element={<AdminRoute><ExpensesPage /></AdminRoute>} />
             <Route path="/users" element={<AdminRoute><UsersPage /></AdminRoute>} />
           </Route>
         </Route>

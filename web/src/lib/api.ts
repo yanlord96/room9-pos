@@ -51,9 +51,9 @@ export const customersApi = {
 // ── Menu ──────────────────────────────────────────────────────────────────────
 export const menuApi = {
   list: () => request<{ items: MenuItem[] }>('/menu'),
-  create: (data: { name: string; category: string; price: number }) =>
+  create: (data: { name: string; category: string; price: number; stock: number }) =>
     request<MenuItem>('/menu', { method: 'POST', body: JSON.stringify(data) }),
-  update: (id: number, data: { name: string; category: string; price: number; is_available: boolean }) =>
+  update: (id: number, data: { name: string; category: string; price: number; is_available: boolean; stock: number }) =>
     request<MenuItem>(`/menu/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: number) =>
     request<{ ok: boolean }>(`/menu/${id}`, { method: 'DELETE' }),
@@ -117,6 +117,26 @@ export const reportsApi = {
     request<ReportData>(`/reports?period=${params.period}&year=${params.year}&month=${params.month}`),
 }
 
+// ── Expenses ──────────────────────────────────────────────────────────────────
+export const expensesApi = {
+  list: (year?: number, month?: number) => {
+    const params = year && month ? `?year=${year}&month=${String(month).padStart(2,'0')}` : year ? `?year=${year}` : ''
+    return request<{ expenses: Expense[]; total: number }>(`/expenses${params}`)
+  },
+  create: (data: { amount: number; category: string; description: string; expense_date: string }) =>
+    request<Expense>('/expenses', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: number, data: { amount: number; category: string; description: string; expense_date: string }) =>
+    request<{ ok: boolean }>(`/expenses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: number) =>
+    request<{ ok: boolean }>(`/expenses/${id}`, { method: 'DELETE' }),
+}
+
+// ── Charts ────────────────────────────────────────────────────────────────────
+export const chartsApi = {
+  get: (year: number, month: number) =>
+    request<ChartData>(`/charts?year=${year}&month=${month}`),
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 export type User = {
   id: number
@@ -138,6 +158,7 @@ export type MenuItem = {
   category: string
   price: number
   is_available: boolean
+  stock: number // -1 = unlimited, 0 = out of stock, >0 = available
 }
 
 export type PoolTable = {
@@ -222,6 +243,36 @@ export type FinancialSummary = {
   fnb_charge: number
   total: number
   sessions: number
+}
+
+export type Expense = {
+  id: number
+  amount: number
+  category: string
+  description: string
+  expense_date: string
+  created_by: number
+  created_at: string
+  created_name: string
+}
+
+export type TableStat = {
+  table_name: string
+  total: number
+  sessions: number
+}
+
+export type HourStat = {
+  hour: number
+  sessions: number
+  total: number
+}
+
+export type ChartData = {
+  per_table: TableStat[]
+  per_hour: HourStat[]
+  year: number
+  month: number
 }
 
 export type ReportData = {

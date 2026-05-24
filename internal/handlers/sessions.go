@@ -167,12 +167,12 @@ func (h *Handler) APIBookingDetail(c *gin.Context) {
 	}
 	s.FnbCharge = fnbTotal
 
-	menuRows, _ := h.db.Query(`SELECT id, name, category, price FROM menu_items WHERE is_available=1 ORDER BY category, name`)
+	menuRows, _ := h.db.Query(`SELECT id, name, category, price, stock FROM menu_items WHERE is_available=1 ORDER BY category, name`)
 	defer menuRows.Close()
 	menuItems := []models.MenuItem{}
 	for menuRows.Next() {
 		var m models.MenuItem
-		menuRows.Scan(&m.ID, &m.Name, &m.Category, &m.Price)
+		menuRows.Scan(&m.ID, &m.Name, &m.Category, &m.Price, &m.Stock)
 		menuItems = append(menuItems, m)
 	}
 
@@ -327,19 +327,30 @@ func (h *Handler) APIOrderCreate(c *gin.Context) {
 	}
 
 	var price float64
-	if err := h.db.QueryRow(`SELECT price FROM menu_items WHERE id=?`, body.MenuItemID).Scan(&price); err != nil {
+	var stock int
+	if err := h.db.QueryRow(`SELECT price, stock FROM menu_items WHERE id=?`, body.MenuItemID).Scan(&price, &stock); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Menu item not found"})
 		return
 	}
+	if stock != -1 && stock < body.Quantity {
+		c.JSON(http.StatusConflict, gin.H{"error": "Insufficient stock"})
+		return
+	}
 
-	res, err := h.db.Exec(
+	tx, _ := h.db.Begin()
+	res, err := tx.Exec(
 		`INSERT INTO orders (session_id, menu_item_id, quantity, unit_price) VALUES (?, ?, ?, ?)`,
 		body.SessionID, body.MenuItemID, body.Quantity, price,
 	)
 	if err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add order"})
 		return
 	}
+	if stock != -1 {
+		tx.Exec(`UPDATE menu_items SET stock=stock-?, updated_at=CURRENT_TIMESTAMP WHERE id=?`, body.Quantity, body.MenuItemID)
+	}
+	tx.Commit()
 	id, _ := res.LastInsertId()
 
 	var o models.Order
@@ -352,10 +363,79 @@ func (h *Handler) APIOrderCreate(c *gin.Context) {
 
 func (h *Handler) APIOrderDelete(c *gin.Context) {
 	id := c.Param("id")
-	var sessionID int
-	h.db.QueryRow(`SELECT session_id FROM orders WHERE id=?`, id).Scan(&sessionID)
-	h.db.Exec(`DELETE FROM orders WHERE id=?`, id)
+	var sessionID, menuItemID, quantity int
+	h.db.QueryRow(`SELECT session_id, menu_item_id, quantity FROM orders WHERE id=?`, id).Scan(&sessionID, &menuItemID, &quantity)
+
+	tx, _ := h.db.Begin()
+	tx.Exec(`DELETE FROM orders WHERE id=?`, id)
+	// restore stock if tracked
+	tx.Exec(`UPDATE menu_items SET stock=stock+?, updated_at=CURRENT_TIMESTAMP WHERE id=? AND stock != -1`, quantity, menuItemID)
+	tx.Commit()
+
 	c.JSON(http.StatusOK, gin.H{"ok": true, "session_id": sessionID})
+}
+
+func (h *Handler) APICharts(c *gin.Context) {
+	yearStr := c.DefaultQuery("year", strconv.Itoa(time.Now().Year()))
+	monthStr := c.DefaultQuery("month", strconv.Itoa(int(time.Now().Month())))
+	year, _ := strconv.Atoi(yearStr)
+	month, _ := strconv.Atoi(monthStr)
+	yy := fmt.Sprintf("%04d", year)
+	mm := fmt.Sprintf("%02d", month)
+
+	// Revenue per table for the given month
+	type TableStat struct {
+		TableName string  `json:"table_name"`
+		Total     float64 `json:"total"`
+		Sessions  int     `json:"sessions"`
+	}
+	tableRows, _ := h.db.Query(`
+		SELECT t.name, COALESCE(SUM(s.total_amount), 0), COUNT(s.id)
+		FROM pool_tables t
+		LEFT JOIN sessions s ON s.table_id = t.id
+			AND s.status = 'completed'
+			AND strftime('%Y', s.ended_at) = ?
+			AND strftime('%m', s.ended_at) = ?
+		GROUP BY t.id, t.name
+		ORDER BY t.name
+	`, yy, mm)
+	defer tableRows.Close()
+	perTable := []TableStat{}
+	for tableRows.Next() {
+		var ts TableStat
+		tableRows.Scan(&ts.TableName, &ts.Total, &ts.Sessions)
+		perTable = append(perTable, ts)
+	}
+
+	// Sessions per hour of day
+	type HourStat struct {
+		Hour     int     `json:"hour"`
+		Sessions int     `json:"sessions"`
+		Total    float64 `json:"total"`
+	}
+	hourRows, _ := h.db.Query(`
+		SELECT CAST(strftime('%H', started_at) AS INTEGER), COUNT(*), COALESCE(SUM(total_amount), 0)
+		FROM sessions
+		WHERE status = 'completed'
+			AND strftime('%Y', ended_at) = ?
+			AND strftime('%m', ended_at) = ?
+		GROUP BY strftime('%H', started_at)
+		ORDER BY 1
+	`, yy, mm)
+	defer hourRows.Close()
+	perHour := []HourStat{}
+	for hourRows.Next() {
+		var hs HourStat
+		hourRows.Scan(&hs.Hour, &hs.Sessions, &hs.Total)
+		perHour = append(perHour, hs)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"per_table": perTable,
+		"per_hour":  perHour,
+		"year":      year,
+		"month":     month,
+	})
 }
 
 func (h *Handler) APIReportData(c *gin.Context) {

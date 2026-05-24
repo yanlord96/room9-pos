@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { menuApi, type MenuItem } from '@/lib/api'
 import { formatRp } from '@/lib/utils'
-import { Plus, Pencil, Trash2, X, Check, UtensilsCrossed } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Check, UtensilsCrossed, Package } from 'lucide-react'
 
-type FormState = { id?: number; name: string; category: string; price: string; is_available: boolean }
+type FormState = { id?: number; name: string; category: string; price: string; is_available: boolean; stock: string }
 
 export default function MenuPage() {
   const qc = useQueryClient()
@@ -20,6 +20,7 @@ export default function MenuPage() {
         category: form!.category,
         price: Number(form!.price),
         is_available: form!.is_available,
+        stock: form!.stock === '' ? -1 : Number(form!.stock),
       }
       return form!.id ? menuApi.update(form!.id, payload) : menuApi.create(payload)
     },
@@ -38,7 +39,7 @@ export default function MenuPage() {
     return acc
   }, {})
 
-  const blankForm = (): FormState => ({ name: '', category: '', price: '', is_available: true })
+  const blankForm = (): FormState => ({ name: '', category: '', price: '', is_available: true, stock: '' })
 
   return (
     <div className="p-6 space-y-5">
@@ -72,12 +73,21 @@ export default function MenuPage() {
                     <span className={item.is_available ? 'badge-green' : 'badge-gray'}>
                       {item.is_available ? 'Available' : 'Unavailable'}
                     </span>
+                    {item.stock !== -1 && (
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                        item.stock === 0 ? 'bg-red-900/40 text-red-400' :
+                        item.stock <= 5 ? 'bg-yellow-900/40 text-yellow-400' :
+                        'bg-gray-800 text-gray-400'
+                      }`}>
+                        <Package className="h-3 w-3" />{item.stock}
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm font-semibold text-white leading-tight mb-1">{item.name}</p>
                   <p className="text-sm font-bold text-brand-400">{formatRp(item.price)}</p>
                   <div className="flex gap-1 mt-3">
                     <button
-                      onClick={() => setForm({ id: item.id, name: item.name, category: item.category, price: String(item.price), is_available: item.is_available })}
+                      onClick={() => setForm({ id: item.id, name: item.name, category: item.category, price: String(item.price), is_available: item.is_available, stock: item.stock === -1 ? '' : String(item.stock) })}
                       className="btn-ghost btn-sm flex-1 justify-center"
                     >
                       <Pencil className="h-3.5 w-3.5" />
@@ -110,6 +120,18 @@ export default function MenuPage() {
             <div>
               <label className="label">Price (IDR) *</label>
               <input className="input" required type="number" min="0" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+            </div>
+            <div>
+              <label className="label">Stock</label>
+              <input
+                className="input"
+                type="number"
+                min="0"
+                placeholder="Kosongkan = unlimited"
+                value={form.stock}
+                onChange={(e) => setForm({ ...form, stock: e.target.value })}
+              />
+              <p className="text-xs text-gray-600 mt-1">Kosongkan jika tidak ingin tracking stok</p>
             </div>
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={form.is_available} onChange={(e) => setForm({ ...form, is_available: e.target.checked })} className="rounded" />

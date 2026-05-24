@@ -111,6 +111,17 @@ func alterSessions(db *sql.DB) {
 	db.Exec(`ALTER TABLE sessions ADD COLUMN duration_minutes INTEGER NOT NULL DEFAULT 0`)
 	db.Exec(`ALTER TABLE sessions ADD COLUMN payment_method TEXT NOT NULL DEFAULT 'cash'`)
 	db.Exec(`ALTER TABLE users ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP`)
+	db.Exec(`ALTER TABLE menu_items ADD COLUMN stock INTEGER NOT NULL DEFAULT -1`)
+	db.Exec(`CREATE TABLE IF NOT EXISTS expenses (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		amount REAL NOT NULL,
+		category TEXT NOT NULL,
+		description TEXT NOT NULL,
+		expense_date DATE NOT NULL DEFAULT (date('now')),
+		created_by INTEGER,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (created_by) REFERENCES users(id)
+	)`)
 }
 
 func seed(db *sql.DB) error {

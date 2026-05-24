@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { reportsApi } from '@/lib/api'
+import { reportsApi, chartsApi, type TableStat, type HourStat } from '@/lib/api'
 import { formatRp, MONTH_NAMES } from '@/lib/utils'
-import { Printer, BarChart3 } from 'lucide-react'
+import { Printer, BarChart3, Table2, Clock } from 'lucide-react'
 
 const PERIODS = ['daily', 'weekly', 'monthly', 'yearly'] as const
 type Period = typeof PERIODS[number]
@@ -16,6 +16,11 @@ export default function ReportsPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['reports', period, year, month],
     queryFn: () => reportsApi.get({ period, year, month }),
+  })
+
+  const { data: charts } = useQuery({
+    queryKey: ['charts', year, month],
+    queryFn: () => chartsApi.get(year, month),
   })
 
   const yearOptions = Array.from({ length: 5 }, (_, i) => now.getFullYear() - i)
@@ -66,6 +71,36 @@ export default function ReportsPage() {
         </div>
       )}
 
+      {/* Charts */}
+      {charts && (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          <BarChart
+            title="Pendapatan per Meja"
+            subtitle={`${MONTH_NAMES[month - 1]} ${year}`}
+            icon={Table2}
+            data={charts.per_table.map((t: TableStat) => ({
+              label: t.table_name,
+              value: t.total,
+              sub: `${t.sessions} sesi`,
+            }))}
+            color="bg-brand-500"
+            formatValue={formatRp}
+          />
+          <BarChart
+            title="Jam Tersibuk"
+            subtitle={`${MONTH_NAMES[month - 1]} ${year}`}
+            icon={Clock}
+            data={charts.per_hour.map((h: HourStat) => ({
+              label: `${String(h.hour).padStart(2, '0')}:00`,
+              value: h.sessions,
+              sub: formatRp(h.total),
+            }))}
+            color="bg-yellow-500"
+            formatValue={(v) => `${v} sesi`}
+          />
+        </div>
+      )}
+
       {/* Table */}
       <div className="card overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-800 flex items-center gap-2">
@@ -109,6 +144,52 @@ export default function ReportsPage() {
           </tbody>
         </table>
       </div>
+    </div>
+  )
+}
+
+function BarChart({ title, subtitle, icon: Icon, data, color, formatValue }: {
+  title: string
+  subtitle: string
+  icon: React.ElementType
+  data: { label: string; value: number; sub: string }[]
+  color: string
+  formatValue: (v: number) => string
+}) {
+  const max = Math.max(...data.map((d) => d.value), 1)
+
+  return (
+    <div className="card p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <Icon className="h-4 w-4 text-gray-400" />
+        <div>
+          <p className="text-sm font-semibold text-white">{title}</p>
+          <p className="text-xs text-gray-500">{subtitle}</p>
+        </div>
+      </div>
+      {data.length === 0 ? (
+        <p className="text-sm text-gray-600 text-center py-8">Belum ada data</p>
+      ) : (
+        <div className="space-y-3">
+          {data.map((d) => (
+            <div key={d.label}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-gray-400 font-medium">{d.label}</span>
+                <div className="text-right">
+                  <span className="text-xs font-semibold text-white">{formatValue(d.value)}</span>
+                  <span className="text-xs text-gray-600 ml-2">{d.sub}</span>
+                </div>
+              </div>
+              <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${color} transition-all duration-500`}
+                  style={{ width: `${(d.value / max) * 100}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

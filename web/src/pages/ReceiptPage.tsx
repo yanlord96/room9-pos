@@ -4,6 +4,30 @@ import { bookingsApi } from '@/lib/api'
 import { formatRp, formatDateTime } from '@/lib/utils'
 import { ArrowLeft, Printer, Circle } from 'lucide-react'
 
+const thermalPrintStyle = `
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+  body {
+    margin: 0;
+    padding: 0;
+    width: 80mm;
+    font-size: 12px;
+    font-family: 'Courier New', Courier, monospace;
+    color: #000 !important;
+    background: #fff !important;
+  }
+  * {
+    color: #000 !important;
+    background: transparent !important;
+    border-color: #000 !important;
+    box-shadow: none !important;
+  }
+}
+`
+
 export default function ReceiptPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -23,6 +47,7 @@ export default function ReceiptPage() {
 
   return (
     <div className="p-6">
+      <style>{thermalPrintStyle}</style>
       {/* Screen controls — hidden on print */}
       <div className="flex items-center gap-3 mb-6 print:hidden">
         <button onClick={() => navigate('/bookings')} className="btn-secondary btn-sm">
@@ -36,7 +61,7 @@ export default function ReceiptPage() {
       </div>
 
       {/* Receipt */}
-      <div className="mx-auto max-w-sm card p-6 print:shadow-none print:border-0 print:max-w-none print:p-0">
+      <div className="mx-auto max-w-sm card p-6 print:shadow-none print:border-0 print:max-w-none print:p-2 print:w-[72mm]">
         {/* Header */}
         <div className="text-center mb-6">
           <div className="flex justify-center mb-2">

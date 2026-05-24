@@ -24,6 +24,7 @@ type MenuItem struct {
 	Category    string  `json:"category"`
 	Price       float64 `json:"price"`
 	IsAvailable bool    `json:"is_available"`
+	Stock       int     `json:"stock"` // -1 = unlimited, 0 = out of stock, >0 = available
 }
 
 type PoolTable struct {
@@ -69,6 +70,17 @@ type FinancialSummary struct {
 	FnbCharge   float64 `json:"fnb_charge"`
 	Total       float64 `json:"total"`
 	Sessions    int     `json:"sessions"`
+}
+
+type Expense struct {
+	ID          int       `json:"id"`
+	Amount      float64   `json:"amount"`
+	Category    string    `json:"category"`
+	Description string    `json:"description"`
+	ExpenseDate string    `json:"expense_date"`
+	CreatedBy   int       `json:"created_by"`
+	CreatedAt   time.Time `json:"created_at"`
+	CreatedName string    `json:"created_name"`
 }
 
 type AppSession struct {
