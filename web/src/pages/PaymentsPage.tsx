@@ -89,7 +89,13 @@ export default function PaymentsPage() {
                 </td>
               </tr>
             ) : (
-              payments.map((p) => <PaymentRow key={p.id} payment={p} onReceipt={() => navigate(`/bookings/${p.id}/receipt`)} />)
+              payments.map((p) => (
+                <PaymentRow
+                  key={`${p.type}-${p.id}`}
+                  payment={p}
+                  onReceipt={() => navigate(p.type === 'walkin' ? `/walk-in/${p.id}/receipt` : `/bookings/${p.id}/receipt`)}
+                />
+              ))
             )}
           </tbody>
         </table>
@@ -108,15 +114,18 @@ function PaymentRow({ payment: p, onReceipt }: { payment: Payment; onReceipt: ()
         <p className="text-white font-medium">{p.customer_name}</p>
         <p className="text-xs text-gray-500">{p.customer_phone}</p>
       </td>
-      <td className="px-4 py-3 text-gray-300">{p.table_name}</td>
-      <td className="px-4 py-3 text-gray-400 text-xs">{p.ended_at ? formatDateTime(p.ended_at) : '—'}</td>
+      <td className="px-4 py-3">
+        <p className="text-gray-300">{p.table_name}</p>
+        {p.type === 'walkin' && <span className="text-xs text-orange-400 font-medium">Walk-in</span>}
+      </td>
+      <td className="px-4 py-3 text-gray-400 text-xs">{formatDateTime(p.started_at)}</td>
       <td className="px-4 py-3">
         <span className={`${m.cls} flex items-center gap-1 w-fit`}>
           <Icon className="h-3 w-3" />{m.label}
         </span>
       </td>
-      <td className="px-4 py-3 text-gray-300 text-right">{formatRp(p.table_charge)}</td>
-      <td className="px-4 py-3 text-gray-300 text-right">{formatRp(p.fnb_charge)}</td>
+      <td className="px-4 py-3 text-gray-300 text-right">{p.type === 'walkin' ? '—' : formatRp(p.table_charge)}</td>
+      <td className="px-4 py-3 text-gray-300 text-right">{p.type === 'walkin' ? '—' : formatRp(p.fnb_charge)}</td>
       <td className="px-4 py-3 text-brand-400 font-semibold text-right">{formatRp(p.total_amount)}</td>
       <td className="px-4 py-3">
         <button onClick={onReceipt} className="btn-ghost btn-sm p-1.5" title="View receipt">

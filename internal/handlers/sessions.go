@@ -221,6 +221,24 @@ func (h *Handler) APIBookingEnd(c *gin.Context) {
 }
 
 func (h *Handler) APIPaymentList(c *gin.Context) {
+	type Payment struct {
+		ID            int        `json:"id"`
+		StartedAt     time.Time  `json:"started_at"`
+		EndedAt       *time.Time `json:"ended_at"`
+		TableCharge   float64    `json:"table_charge"`
+		FnbCharge     float64    `json:"fnb_charge"`
+		TotalAmount   float64    `json:"total_amount"`
+		PaymentMethod string     `json:"payment_method"`
+		BillingType   string     `json:"billing_type"`
+		TableName     string     `json:"table_name"`
+		CustomerName  string     `json:"customer_name"`
+		CustomerPhone string     `json:"customer_phone"`
+		Type          string     `json:"type"` // "table" or "walkin"
+	}
+
+	payments := []Payment{}
+
+	// Table sessions
 	rows, err := h.db.Query(`
 		SELECT s.id, s.started_at, s.ended_at, s.table_charge, s.fnb_charge,
 		       s.total_amount, s.payment_method, s.billing_type,
@@ -237,29 +255,47 @@ func (h *Handler) APIPaymentList(c *gin.Context) {
 		return
 	}
 	defer rows.Close()
-
-	type Payment struct {
-		ID            int        `json:"id"`
-		StartedAt     time.Time  `json:"started_at"`
-		EndedAt       *time.Time `json:"ended_at"`
-		TableCharge   float64    `json:"table_charge"`
-		FnbCharge     float64    `json:"fnb_charge"`
-		TotalAmount   float64    `json:"total_amount"`
-		PaymentMethod string     `json:"payment_method"`
-		BillingType   string     `json:"billing_type"`
-		TableName     string     `json:"table_name"`
-		CustomerName  string     `json:"customer_name"`
-		CustomerPhone string     `json:"customer_phone"`
-	}
-
-	payments := []Payment{}
 	for rows.Next() {
 		var p Payment
+		p.Type = "table"
 		rows.Scan(&p.ID, &p.StartedAt, &p.EndedAt, &p.TableCharge, &p.FnbCharge,
 			&p.TotalAmount, &p.PaymentMethod, &p.BillingType,
 			&p.TableName, &p.CustomerName, &p.CustomerPhone)
 		payments = append(payments, p)
 	}
+
+	// Walk-in orders
+	wrows, err := h.db.Query(`
+		SELECT w.id, w.created_at, w.total, w.payment_method, COALESCE(u.name,'')
+		FROM walkin_orders w
+		LEFT JOIN users u ON u.id = w.created_by
+		ORDER BY w.created_at DESC
+		LIMIT 200
+	`)
+	if err == nil {
+		defer wrows.Close()
+		for wrows.Next() {
+			var p Payment
+			p.Type = "walkin"
+			p.TableName = "Walk-in"
+			p.BillingType = "walkin"
+			wrows.Scan(&p.ID, &p.StartedAt, &p.TotalAmount, &p.PaymentMethod, &p.CustomerName)
+			payments = append(payments, p)
+		}
+	}
+
+	// Sort by started_at desc
+	for i := 0; i < len(payments)-1; i++ {
+		for j := i + 1; j < len(payments); j++ {
+			if payments[j].StartedAt.After(payments[i].StartedAt) {
+				payments[i], payments[j] = payments[j], payments[i]
+			}
+		}
+	}
+	if len(payments) > 200 {
+		payments = payments[:200]
+	}
+
 	c.JSON(http.StatusOK, gin.H{"payments": payments})
 }
 

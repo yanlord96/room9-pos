@@ -207,6 +207,7 @@ export type Payment = {
   table_name: string
   customer_name: string
   customer_phone: string
+  type: 'table' | 'walkin'
 }
 
 export type Order = {
