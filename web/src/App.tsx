@@ -15,6 +15,7 @@ import PaymentsPage from '@/pages/PaymentsPage'
 import UsersPage from '@/pages/UsersPage'
 import TableDisplayPage from '@/pages/TableDisplayPage'
 import ExpensesPage from '@/pages/ExpensesPage'
+import KitchenTicketPage from '@/pages/KitchenTicketPage'
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
             <Route path="/bookings" element={<BookingsPage />} />
             <Route path="/bookings/:id" element={<SessionDetailPage />} />
             <Route path="/bookings/:id/receipt" element={<ReceiptPage />} />
+            <Route path="/bookings/:id/kitchen" element={<KitchenTicketPage />} />
             <Route path="/customers" element={<CustomersPage />} />
             <Route path="/menu" element={<MenuPage />} />
             <Route path="/tables" element={<TablesPage />} />

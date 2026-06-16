@@ -7,7 +7,7 @@ import { useSessionTimer } from '@/hooks/useSessionTimer'
 import { useAuth } from '@/hooks/useAuth'
 import {
   ArrowLeft, Square, Plus, Minus, Trash2, ShoppingCart,
-  Clock, User, Table2, X, Banknote, QrCode, Building2,
+  Clock, User, Table2, X, Banknote, QrCode, Building2, UtensilsCrossed,
 } from 'lucide-react'
 
 export default function SessionDetailPage() {
@@ -115,7 +115,18 @@ export default function SessionDetailPage() {
 
           {/* Orders */}
           <div className="flex-1 overflow-y-auto p-4">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Orders</p>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Orders</p>
+              {orders.length > 0 && (
+                <button
+                  onClick={() => navigate(`/bookings/${sessionId}/kitchen`)}
+                  className="btn-ghost btn-sm text-xs flex items-center gap-1 text-orange-400 hover:text-orange-300"
+                >
+                  <UtensilsCrossed className="h-3 w-3" />
+                  Print Dapur
+                </button>
+              )}
+            </div>
             {orders.length === 0 ? (
               <p className="text-sm text-gray-600 text-center mt-8">No orders yet</p>
             ) : (
