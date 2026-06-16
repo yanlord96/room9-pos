@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, UtensilsCrossed,
-  Table2, BarChart3, LogOut, Circle, CreditCard, ShieldCheck, Tv2, Wallet,
+  Table2, BarChart3, LogOut, Circle, CreditCard, ShieldCheck, Tv2, Wallet, ShoppingBag,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useQueryClient, useMutation } from '@tanstack/react-query'
@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 
 const nav = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/walk-in', label: 'Walk-in Order', icon: ShoppingBag },
   { to: '/customers', label: 'Customers', icon: Users },
   { to: '/menu', label: 'Menu', icon: UtensilsCrossed },
   { to: '/tables', label: 'Tables', icon: Table2 },

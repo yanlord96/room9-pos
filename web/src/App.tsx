@@ -16,6 +16,9 @@ import UsersPage from '@/pages/UsersPage'
 import TableDisplayPage from '@/pages/TableDisplayPage'
 import ExpensesPage from '@/pages/ExpensesPage'
 import KitchenTicketPage from '@/pages/KitchenTicketPage'
+import WalkinPage from '@/pages/WalkinPage'
+import WalkinReceiptPage from '@/pages/WalkinReceiptPage'
+import WalkinKitchenPage from '@/pages/WalkinKitchenPage'
 
 export default function App() {
   return (
@@ -31,6 +34,9 @@ export default function App() {
             <Route path="/bookings/:id" element={<SessionDetailPage />} />
             <Route path="/bookings/:id/receipt" element={<ReceiptPage />} />
             <Route path="/bookings/:id/kitchen" element={<KitchenTicketPage />} />
+            <Route path="/walk-in" element={<WalkinPage />} />
+            <Route path="/walk-in/:id/receipt" element={<WalkinReceiptPage />} />
+            <Route path="/walk-in/:id/kitchen" element={<WalkinKitchenPage />} />
             <Route path="/customers" element={<CustomersPage />} />
             <Route path="/menu" element={<MenuPage />} />
             <Route path="/tables" element={<TablesPage />} />

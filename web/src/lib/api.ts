@@ -117,6 +117,14 @@ export const reportsApi = {
     request<ReportData>(`/reports?period=${params.period}&year=${params.year}&month=${params.month}`),
 }
 
+// ── Walk-in ───────────────────────────────────────────────────────────────────
+export const walkinApi = {
+  list: () => request<{ orders: WalkinOrder[] }>('/walk-in'),
+  checkout: (data: { payment_method: string; note: string; items: { menu_item_id: number; quantity: number }[] }) =>
+    request<{ order_id: number }>('/walk-in/checkout', { method: 'POST', body: JSON.stringify(data) }),
+  receipt: (id: number) => request<{ order: WalkinOrder; items: WalkinOrderItem[] }>(`/walk-in/${id}/receipt`),
+}
+
 // ── Expenses ──────────────────────────────────────────────────────────────────
 export const expensesApi = {
   list: (year?: number, month?: number) => {
@@ -254,6 +262,26 @@ export type Expense = {
   created_by: number
   created_at: string
   created_name: string
+}
+
+export type WalkinOrder = {
+  id: number
+  payment_method: string
+  total: number
+  note: string
+  created_by: number
+  created_at: string
+  created_name: string
+}
+
+export type WalkinOrderItem = {
+  id: number
+  order_id: number
+  menu_item_id: number
+  item_name: string
+  item_category: string
+  quantity: number
+  unit_price: number
 }
 
 export type TableStat = {

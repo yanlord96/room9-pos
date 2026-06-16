@@ -94,6 +94,10 @@ func main() {
 
 			auth.GET("/payments", h.APIPaymentList)
 
+			auth.GET("/walk-in", h.APIWalkinList)
+			auth.POST("/walk-in/checkout", h.APIWalkinCheckout)
+			auth.GET("/walk-in/:id/receipt", h.APIWalkinReceipt)
+
 			admin := auth.Group("/")
 			admin.Use(middleware.APIRequireAdmin())
 			{

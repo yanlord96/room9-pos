@@ -122,6 +122,26 @@ func alterSessions(db *sql.DB) {
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (created_by) REFERENCES users(id)
 	)`)
+	db.Exec(`CREATE TABLE IF NOT EXISTS walkin_orders (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		payment_method TEXT NOT NULL DEFAULT 'cash',
+		total REAL NOT NULL DEFAULT 0,
+		note TEXT NOT NULL DEFAULT '',
+		created_by INTEGER,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (created_by) REFERENCES users(id)
+	)`)
+	db.Exec(`CREATE TABLE IF NOT EXISTS walkin_order_items (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		order_id INTEGER NOT NULL,
+		menu_item_id INTEGER NOT NULL,
+		item_name TEXT NOT NULL,
+		item_category TEXT NOT NULL,
+		quantity INTEGER NOT NULL,
+		unit_price REAL NOT NULL,
+		FOREIGN KEY (order_id) REFERENCES walkin_orders(id),
+		FOREIGN KEY (menu_item_id) REFERENCES menu_items(id)
+	)`)
 }
 
 func seed(db *sql.DB) error {

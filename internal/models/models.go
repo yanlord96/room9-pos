@@ -72,6 +72,26 @@ type FinancialSummary struct {
 	Sessions    int     `json:"sessions"`
 }
 
+type WalkinOrder struct {
+	ID            int       `json:"id"`
+	PaymentMethod string    `json:"payment_method"`
+	Total         float64   `json:"total"`
+	Note          string    `json:"note"`
+	CreatedBy     int       `json:"created_by"`
+	CreatedAt     time.Time `json:"created_at"`
+	CreatedName   string    `json:"created_name"`
+}
+
+type WalkinOrderItem struct {
+	ID           int     `json:"id"`
+	OrderID      int     `json:"order_id"`
+	MenuItemID   int     `json:"menu_item_id"`
+	ItemName     string  `json:"item_name"`
+	ItemCategory string  `json:"item_category"`
+	Quantity     int     `json:"quantity"`
+	UnitPrice    float64 `json:"unit_price"`
+}
+
 type Expense struct {
 	ID          int       `json:"id"`
 	Amount      float64   `json:"amount"`
