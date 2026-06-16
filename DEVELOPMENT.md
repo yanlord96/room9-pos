@@ -112,10 +112,13 @@ Buka Console Biznet GIO, lalu jalankan:
 cd ~/room9-pos
 
 # Pull image terbaru dari Docker Hub
-sudo docker-compose pull
+sudo docker compose pull
 
-# Restart container dengan image terbaru
-sudo docker-compose up -d
+# Stop & hapus container lama jika ada conflict
+sudo docker rm 36a7b677e8e5 2>/dev/null || true
+
+# Start container dengan image terbaru
+sudo docker compose up -d
 ```
 
 Cek container berjalan:
