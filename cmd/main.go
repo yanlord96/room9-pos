@@ -102,6 +102,9 @@ func main() {
 			admin.Use(middleware.APIRequireAdmin())
 			{
 				admin.GET("/reports", h.APIReportData)
+				admin.POST("/reports/verify", h.APIReportsVerify)
+				admin.DELETE("/payments/session/:id", h.APIDeleteSession)
+				admin.DELETE("/payments/walkin/:id", h.APIDeleteWalkin)
 				admin.GET("/charts", h.APICharts)
 				admin.GET("/expenses", h.APIExpenseList)
 				admin.POST("/expenses", h.APIExpenseCreate)

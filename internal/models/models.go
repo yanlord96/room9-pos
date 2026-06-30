@@ -59,6 +59,7 @@ type Order struct {
 	MenuItemID   int       `json:"menu_item_id"`
 	Quantity     int       `json:"quantity"`
 	UnitPrice    float64   `json:"unit_price"`
+	Note         string    `json:"note"`
 	CreatedAt    time.Time `json:"created_at"`
 	ItemName     string    `json:"item_name"`
 	ItemCategory string    `json:"item_category"`

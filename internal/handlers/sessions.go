@@ -151,7 +151,7 @@ func (h *Handler) APIBookingDetail(c *gin.Context) {
 	}
 
 	orderRows, _ := h.db.Query(`
-		SELECT o.id, o.quantity, o.unit_price, o.created_at, m.name, m.category
+		SELECT o.id, o.quantity, o.unit_price, o.note, o.created_at, m.name, m.category
 		FROM orders o JOIN menu_items m ON m.id = o.menu_item_id
 		WHERE o.session_id = ? ORDER BY o.created_at
 	`, id)
@@ -161,7 +161,7 @@ func (h *Handler) APIBookingDetail(c *gin.Context) {
 	for orderRows.Next() {
 		var o models.Order
 		o.SessionID = s.ID
-		orderRows.Scan(&o.ID, &o.Quantity, &o.UnitPrice, &o.CreatedAt, &o.ItemName, &o.ItemCategory)
+		orderRows.Scan(&o.ID, &o.Quantity, &o.UnitPrice, &o.Note, &o.CreatedAt, &o.ItemName, &o.ItemCategory)
 		fnbTotal += float64(o.Quantity) * o.UnitPrice
 		orders = append(orders, o)
 	}
@@ -324,7 +324,7 @@ func (h *Handler) APIBookingReceipt(c *gin.Context) {
 	s.EndedAt = endedAt
 
 	orderRows, _ := h.db.Query(`
-		SELECT o.id, o.quantity, o.unit_price, m.name, m.category
+		SELECT o.id, o.quantity, o.unit_price, o.note, m.name, m.category
 		FROM orders o JOIN menu_items m ON m.id = o.menu_item_id
 		WHERE o.session_id = ? ORDER BY o.created_at
 	`, id)
@@ -332,7 +332,7 @@ func (h *Handler) APIBookingReceipt(c *gin.Context) {
 	orders := []models.Order{}
 	for orderRows.Next() {
 		var o models.Order
-		orderRows.Scan(&o.ID, &o.Quantity, &o.UnitPrice, &o.ItemName, &o.ItemCategory)
+		orderRows.Scan(&o.ID, &o.Quantity, &o.UnitPrice, &o.Note, &o.ItemName, &o.ItemCategory)
 		orders = append(orders, o)
 	}
 
@@ -353,9 +353,10 @@ func (h *Handler) APIBookingReceipt(c *gin.Context) {
 
 func (h *Handler) APIOrderCreate(c *gin.Context) {
 	var body struct {
-		SessionID  int `json:"session_id" binding:"required"`
-		MenuItemID int `json:"menu_item_id" binding:"required"`
-		Quantity   int `json:"quantity" binding:"required"`
+		SessionID  int    `json:"session_id" binding:"required"`
+		MenuItemID int    `json:"menu_item_id" binding:"required"`
+		Quantity   int    `json:"quantity" binding:"required"`
+		Note       string `json:"note"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil || body.Quantity <= 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid order fields"})
@@ -375,8 +376,8 @@ func (h *Handler) APIOrderCreate(c *gin.Context) {
 
 	tx, _ := h.db.Begin()
 	res, err := tx.Exec(
-		`INSERT INTO orders (session_id, menu_item_id, quantity, unit_price) VALUES (?, ?, ?, ?)`,
-		body.SessionID, body.MenuItemID, body.Quantity, price,
+		`INSERT INTO orders (session_id, menu_item_id, quantity, unit_price, note) VALUES (?, ?, ?, ?, ?)`,
+		body.SessionID, body.MenuItemID, body.Quantity, price, body.Note,
 	)
 	if err != nil {
 		tx.Rollback()
@@ -391,9 +392,9 @@ func (h *Handler) APIOrderCreate(c *gin.Context) {
 
 	var o models.Order
 	h.db.QueryRow(`
-		SELECT o.id, o.session_id, o.menu_item_id, o.quantity, o.unit_price, o.created_at, m.name, m.category
+		SELECT o.id, o.session_id, o.menu_item_id, o.quantity, o.unit_price, o.note, o.created_at, m.name, m.category
 		FROM orders o JOIN menu_items m ON m.id=o.menu_item_id WHERE o.id=?`, id).
-		Scan(&o.ID, &o.SessionID, &o.MenuItemID, &o.Quantity, &o.UnitPrice, &o.CreatedAt, &o.ItemName, &o.ItemCategory)
+		Scan(&o.ID, &o.SessionID, &o.MenuItemID, &o.Quantity, &o.UnitPrice, &o.Note, &o.CreatedAt, &o.ItemName, &o.ItemCategory)
 	c.JSON(http.StatusCreated, o)
 }
 
@@ -481,7 +482,8 @@ func (h *Handler) APIReportData(c *gin.Context) {
 	year, _ := strconv.Atoi(yearStr)
 	month, _ := strconv.Atoi(monthStr)
 
-	summaries, err := fetchSummaries(h.db, period, year, month)
+	full := c.Query("full") == "true"
+	summaries, err := fetchSummaries(h.db, period, year, month, full)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

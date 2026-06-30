@@ -64,6 +64,14 @@ export function calcFixedCharge(durationMinutes: number, hourlyRate: number): nu
   return Math.ceil((durationMinutes / 60) * hourlyRate / 1000) * 1000
 }
 
+export function calcPB1(fnbSubtotal: number): number {
+  return Math.round(fnbSubtotal * 0.1)
+}
+
+export function roundToHundred(amount: number): number {
+  return Math.ceil(amount / 100) * 100
+}
+
 export const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',

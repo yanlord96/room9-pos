@@ -11,8 +11,8 @@ RUN npm run build
 FROM golang:1.21-alpine AS go-builder
 
 WORKDIR /app
-COPY go.mod ./
-RUN go mod tidy || true
+COPY go.mod go.sum ./
+RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o room9 ./cmd/main.go
 

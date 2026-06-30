@@ -35,7 +35,7 @@ export default function SessionDetailPage() {
   })
 
   const addOrder = useMutation({
-    mutationFn: (vars: { menu_item_id: number; quantity: number }) =>
+    mutationFn: (vars: { menu_item_id: number; quantity: number; note?: string }) =>
       ordersApi.create({ session_id: sessionId, ...vars }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['session', sessionId] }),
   })
@@ -164,7 +164,7 @@ export default function SessionDetailPage() {
                   <MenuItemCard
                     key={item.id}
                     item={item}
-                    onAdd={(qty) => addOrder.mutate({ menu_item_id: item.id, quantity: qty })}
+                    onAdd={(qty, note) => addOrder.mutate({ menu_item_id: item.id, quantity: qty, note })}
                     isPending={addOrder.isPending}
                   />
                 ))}
@@ -192,15 +192,18 @@ function ChargeRow({
 
 function OrderItem({ order, onDelete }: { order: Order; onDelete: () => void }) {
   return (
-    <div className="flex items-center gap-3 rounded-lg bg-gray-800 px-3 py-2">
+    <div className="flex items-start gap-3 rounded-lg bg-gray-800 px-3 py-2">
       <div className="flex-1 min-w-0">
         <p className="text-xs font-medium text-gray-200 truncate">{order.item_name}</p>
         <p className="text-xs text-gray-500">{order.quantity} × {formatRp(order.unit_price)}</p>
+        {order.note && (
+          <p className="text-xs text-yellow-400 mt-0.5 truncate">"{order.note}"</p>
+        )}
       </div>
-      <span className="text-xs font-semibold text-gray-300">
+      <span className="text-xs font-semibold text-gray-300 mt-0.5">
         {formatRp(order.quantity * order.unit_price)}
       </span>
-      <button onClick={onDelete} className="text-gray-600 hover:text-red-400 transition-colors">
+      <button onClick={onDelete} className="text-gray-600 hover:text-red-400 transition-colors mt-0.5">
         <Trash2 className="h-3.5 w-3.5" />
       </button>
     </div>
@@ -209,8 +212,9 @@ function OrderItem({ order, onDelete }: { order: Order; onDelete: () => void }) 
 
 function MenuItemCard({
   item, onAdd, isPending,
-}: { item: MenuItem; onAdd: (qty: number) => void; isPending: boolean }) {
+}: { item: MenuItem; onAdd: (qty: number, note: string) => void; isPending: boolean }) {
   const [qty, setQty] = useState(1)
+  const [note, setNote] = useState('')
   const outOfStock = item.stock !== -1 && item.stock === 0
   const lowStock = item.stock !== -1 && item.stock > 0 && item.stock <= 5
 
@@ -227,6 +231,14 @@ function MenuItemCard({
           )}
         </div>
       </div>
+      <input
+        type="text"
+        placeholder="Catatan dapur..."
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        disabled={outOfStock}
+        className="input text-xs py-1 px-2 w-full disabled:opacity-30"
+      />
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-1 rounded-lg bg-gray-800 p-0.5">
           <button
@@ -246,7 +258,7 @@ function MenuItemCard({
           </button>
         </div>
         <button
-          onClick={() => { onAdd(qty); setQty(1) }}
+          onClick={() => { onAdd(qty, note); setQty(1); setNote('') }}
           disabled={isPending || outOfStock}
           className="btn-primary btn-sm flex-1"
         >

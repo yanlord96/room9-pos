@@ -93,13 +93,14 @@ export default function KitchenTicketPage() {
         ) : (
           <div className="space-y-3">
             {fnbOrders.map((o) => (
-              <div key={o.id} className="flex items-start justify-between gap-2">
-                <div className="flex items-start gap-2">
-                  <span className="text-2xl font-black min-w-[2rem] text-center leading-none">{o.quantity}x</span>
-                  <div>
-                    <p className="text-base font-bold leading-tight">{o.item_name}</p>
-                    <p className="text-xs text-gray-500">{o.item_category}</p>
-                  </div>
+              <div key={o.id} className="flex items-start gap-2">
+                <span className="text-2xl font-black min-w-[2rem] text-center leading-none">{o.quantity}x</span>
+                <div>
+                  <p className="text-base font-bold leading-tight">{o.item_name}</p>
+                  <p className="text-xs text-gray-500">{o.item_category}</p>
+                  {o.note && (
+                    <p className="text-xs font-semibold mt-0.5">* {o.note}</p>
+                  )}
                 </div>
               </div>
             ))}

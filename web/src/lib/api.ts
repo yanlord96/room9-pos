@@ -7,7 +7,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     ...options,
   })
 
-  if (res.status === 401) {
+  if (res.status === 401 && path !== '/auth/login') {
     window.dispatchEvent(new CustomEvent('auth:expired'))
     throw new Error('Unauthorized')
   }
@@ -89,7 +89,7 @@ export const bookingsApi = {
 
 // ── Orders ────────────────────────────────────────────────────────────────────
 export const ordersApi = {
-  create: (data: { session_id: number; menu_item_id: number; quantity: number }) =>
+  create: (data: { session_id: number; menu_item_id: number; quantity: number; note?: string }) =>
     request<Order>('/orders', { method: 'POST', body: JSON.stringify(data) }),
   delete: (id: number) =>
     request<{ ok: boolean; session_id: number }>(`/orders/${id}`, { method: 'DELETE' }),
@@ -109,12 +109,18 @@ export const usersApi = {
 // ── Payments ──────────────────────────────────────────────────────────────────
 export const paymentsApi = {
   list: () => request<{ payments: Payment[] }>('/payments'),
+  deleteSession: (id: number, password: string) =>
+    request<{ ok: boolean }>(`/payments/session/${id}`, { method: 'DELETE', body: JSON.stringify({ password }) }),
+  deleteWalkin: (id: number, password: string) =>
+    request<{ ok: boolean }>(`/payments/walkin/${id}`, { method: 'DELETE', body: JSON.stringify({ password }) }),
 }
 
 // ── Reports ───────────────────────────────────────────────────────────────────
 export const reportsApi = {
-  get: (params: { period: string; year: number; month: number }) =>
-    request<ReportData>(`/reports?period=${params.period}&year=${params.year}&month=${params.month}`),
+  get: (params: { period: string; year: number; month: number; full?: boolean }) =>
+    request<ReportData>(`/reports?period=${params.period}&year=${params.year}&month=${params.month}${params.full ? '&full=true' : ''}`),
+  verify: (password: string) =>
+    request<{ ok: boolean }>('/reports/verify', { method: 'POST', body: JSON.stringify({ password }) }),
 }
 
 // ── Walk-in ───────────────────────────────────────────────────────────────────
@@ -216,6 +222,7 @@ export type Order = {
   menu_item_id: number
   quantity: number
   unit_price: number
+  note: string
   created_at: string
   item_name: string
   item_category: string

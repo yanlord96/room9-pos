@@ -1,8 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { paymentsApi, type Payment } from '@/lib/api'
 import { formatRp, formatDateTime } from '@/lib/utils'
-import { Banknote, QrCode, Building2, Receipt } from 'lucide-react'
+import { Banknote, QrCode, Building2, Receipt, Trash2, Eye, EyeOff, X } from 'lucide-react'
 
 const METHOD_STYLE: Record<string, { label: string; cls: string; icon: React.ElementType }> = {
   cash:     { label: 'Cash',     cls: 'badge-green',  icon: Banknote  },
@@ -12,6 +13,9 @@ const METHOD_STYLE: Record<string, { label: string; cls: string; icon: React.Ele
 
 export default function PaymentsPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; type: 'table' | 'walkin' } | null>(null)
+
   const { data, isLoading } = useQuery({
     queryKey: ['payments'],
     queryFn: paymentsApi.list,
@@ -20,7 +24,6 @@ export default function PaymentsPage() {
 
   const payments = data?.payments ?? []
 
-  // summary by method
   const summary = payments.reduce<Record<string, { count: number; total: number }>>((acc, p) => {
     const m = p.payment_method || 'cash'
     if (!acc[m]) acc[m] = { count: 0, total: 0 }
@@ -94,17 +97,29 @@ export default function PaymentsPage() {
                   key={`${p.type}-${p.id}`}
                   payment={p}
                   onReceipt={() => navigate(p.type === 'walkin' ? `/walk-in/${p.id}/receipt` : `/bookings/${p.id}/receipt`)}
+                  onDelete={() => setDeleteTarget({ id: p.id, type: p.type })}
                 />
               ))
             )}
           </tbody>
         </table>
       </div>
+
+      {deleteTarget && (
+        <DeleteModal
+          target={deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onDeleted={() => {
+            setDeleteTarget(null)
+            queryClient.invalidateQueries({ queryKey: ['payments'] })
+          }}
+        />
+      )}
     </div>
   )
 }
 
-function PaymentRow({ payment: p, onReceipt }: { payment: Payment; onReceipt: () => void }) {
+function PaymentRow({ payment: p, onReceipt, onDelete }: { payment: Payment; onReceipt: () => void; onDelete: () => void }) {
   const m = METHOD_STYLE[p.payment_method] ?? METHOD_STYLE.cash
   const Icon = m.icon
   return (
@@ -128,10 +143,99 @@ function PaymentRow({ payment: p, onReceipt }: { payment: Payment; onReceipt: ()
       <td className="px-4 py-3 text-gray-300 text-right">{p.type === 'walkin' ? '—' : formatRp(p.fnb_charge)}</td>
       <td className="px-4 py-3 text-brand-400 font-semibold text-right">{formatRp(p.total_amount)}</td>
       <td className="px-4 py-3">
-        <button onClick={onReceipt} className="btn-ghost btn-sm p-1.5" title="View receipt">
-          <Receipt className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex items-center gap-1 justify-end">
+          <button onClick={onReceipt} className="btn-ghost btn-sm p-1.5" title="View receipt">
+            <Receipt className="h-3.5 w-3.5" />
+          </button>
+          <button onClick={onDelete} className="btn-ghost btn-sm p-1.5 text-red-500 hover:text-red-400" title="Delete transaction">
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </td>
     </tr>
+  )
+}
+
+function DeleteModal({
+  target,
+  onClose,
+  onDeleted,
+}: {
+  target: { id: number; type: 'table' | 'walkin' }
+  onClose: () => void
+  onDeleted: () => void
+}) {
+  const [password, setPassword] = useState('')
+  const [showPw, setShowPw] = useState(false)
+  const [error, setError] = useState('')
+
+  const mutation = useMutation({
+    mutationFn: (pw: string) =>
+      target.type === 'walkin'
+        ? paymentsApi.deleteWalkin(target.id, pw)
+        : paymentsApi.deleteSession(target.id, pw),
+    onSuccess: onDeleted,
+    onError: (e: Error) => setError(e.message),
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    mutation.mutate(password)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 w-full max-w-sm shadow-xl">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-white font-semibold">Hapus Transaksi</h2>
+            <p className="text-xs text-gray-500 mt-0.5">#{String(target.id).padStart(4, '0')} · {target.type === 'walkin' ? 'Walk-in' : 'Table session'}</p>
+          </div>
+          <button onClick={onClose} className="btn-ghost p-1.5">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <p className="text-sm text-gray-400 mb-4">
+          Masukkan password owner untuk menghapus transaksi ini. Tindakan ini tidak bisa dibatalkan.
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="relative">
+            <input
+              type={showPw ? 'text' : 'password'}
+              placeholder="Password owner"
+              value={password}
+              onChange={e => { setPassword(e.target.value); setError('') }}
+              className="input w-full pr-10"
+              autoFocus
+            />
+            <button
+              type="button"
+              onClick={() => setShowPw(v => !v)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 btn-ghost p-1"
+            >
+              {showPw ? <EyeOff className="h-4 w-4 text-gray-400" /> : <Eye className="h-4 w-4 text-gray-400" />}
+            </button>
+          </div>
+
+          {error && <p className="text-xs text-red-400">{error}</p>}
+
+          <div className="flex gap-2 pt-1">
+            <button type="button" onClick={onClose} className="btn-secondary flex-1">
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={!password || mutation.isPending}
+              className="flex-1 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              {mutation.isPending ? 'Menghapus...' : 'Hapus'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   )
 }

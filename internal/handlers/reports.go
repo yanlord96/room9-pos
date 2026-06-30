@@ -13,51 +13,91 @@ var monthNames = []string{
 	"July", "August", "September", "October", "November", "December",
 }
 
-func fetchSummaries(db *sql.DB, period string, year, month int) ([]models.FinancialSummary, error) {
+func fetchSummaries(db *sql.DB, period string, year, month int, full bool) ([]models.FinancialSummary, error) {
 	var query string
 	var args []interface{}
 
+	y := strconv.Itoa(year)
+	m := fmt.Sprintf("%02d", month)
+
+	// When not full: hide every 5th transaction (id % 5 == 0) → shows ~80%
+	sFilter := "AND s.id % 5 != 0"
+	wFilter := "AND w.id % 5 != 0"
+	if full {
+		sFilter = ""
+		wFilter = ""
+	}
+
 	switch period {
 	case "daily":
-		query = `
-			SELECT strftime('%d', ended_at, 'localtime'),
-			       COALESCE(SUM(table_charge),0), COALESCE(SUM(fnb_charge),0),
-			       COALESCE(SUM(total_amount),0), COUNT(*)
-			FROM sessions WHERE status='completed'
-			  AND strftime('%Y', ended_at, 'localtime') = ?
-			  AND strftime('%m', ended_at, 'localtime') = ?
+		query = fmt.Sprintf(`
+			SELECT strftime('%%d', dt, 'localtime'),
+			       COALESCE(SUM(tc),0), COALESCE(SUM(fc),0),
+			       COALESCE(SUM(tot),0), COUNT(*)
+			FROM (
+			  SELECT ended_at AS dt, table_charge AS tc, fnb_charge AS fc, total_amount AS tot
+			  FROM sessions s WHERE s.status='completed' %s
+			    AND strftime('%%Y', ended_at, 'localtime') = ?
+			    AND strftime('%%m', ended_at, 'localtime') = ?
+			  UNION ALL
+			  SELECT created_at AS dt, 0 AS tc, total AS fc, total AS tot
+			  FROM walkin_orders w WHERE 1=1 %s
+			  AND strftime('%%Y', created_at, 'localtime') = ?
+			    AND strftime('%%m', created_at, 'localtime') = ?
+			)
 			GROUP BY 1 ORDER BY 1
-		`
-		args = []interface{}{strconv.Itoa(year), fmt.Sprintf("%02d", month)}
+		`, sFilter, wFilter)
+		args = []interface{}{y, m, y, m}
 	case "weekly":
-		query = `
-			SELECT 'Week ' || strftime('%W', ended_at, 'localtime'),
-			       COALESCE(SUM(table_charge),0), COALESCE(SUM(fnb_charge),0),
-			       COALESCE(SUM(total_amount),0), COUNT(*)
-			FROM sessions WHERE status='completed'
-			  AND strftime('%Y', ended_at, 'localtime') = ?
-			  AND strftime('%m', ended_at, 'localtime') = ?
+		query = fmt.Sprintf(`
+			SELECT 'Week ' || strftime('%%W', dt, 'localtime'),
+			       COALESCE(SUM(tc),0), COALESCE(SUM(fc),0),
+			       COALESCE(SUM(tot),0), COUNT(*)
+			FROM (
+			  SELECT ended_at AS dt, table_charge AS tc, fnb_charge AS fc, total_amount AS tot
+			  FROM sessions s WHERE s.status='completed' %s
+			    AND strftime('%%Y', ended_at, 'localtime') = ?
+			    AND strftime('%%m', ended_at, 'localtime') = ?
+			  UNION ALL
+			  SELECT created_at AS dt, 0 AS tc, total AS fc, total AS tot
+			  FROM walkin_orders w WHERE 1=1 %s
+			    AND strftime('%%Y', created_at, 'localtime') = ?
+			    AND strftime('%%m', created_at, 'localtime') = ?
+			)
 			GROUP BY 1 ORDER BY 1
-		`
-		args = []interface{}{strconv.Itoa(year), fmt.Sprintf("%02d", month)}
+		`, sFilter, wFilter)
+		args = []interface{}{y, m, y, m}
 	case "monthly":
-		query = `
-			SELECT strftime('%m', ended_at, 'localtime'),
-			       COALESCE(SUM(table_charge),0), COALESCE(SUM(fnb_charge),0),
-			       COALESCE(SUM(total_amount),0), COUNT(*)
-			FROM sessions WHERE status='completed'
-			  AND strftime('%Y', ended_at, 'localtime') = ?
+		query = fmt.Sprintf(`
+			SELECT strftime('%%m', dt, 'localtime'),
+			       COALESCE(SUM(tc),0), COALESCE(SUM(fc),0),
+			       COALESCE(SUM(tot),0), COUNT(*)
+			FROM (
+			  SELECT ended_at AS dt, table_charge AS tc, fnb_charge AS fc, total_amount AS tot
+			  FROM sessions s WHERE s.status='completed' %s
+			    AND strftime('%%Y', ended_at, 'localtime') = ?
+			  UNION ALL
+			  SELECT created_at AS dt, 0 AS tc, total AS fc, total AS tot
+			  FROM walkin_orders w WHERE 1=1 %s
+			    AND strftime('%%Y', created_at, 'localtime') = ?
+			)
 			GROUP BY 1 ORDER BY 1
-		`
-		args = []interface{}{strconv.Itoa(year)}
+		`, sFilter, wFilter)
+		args = []interface{}{y, y}
 	case "yearly":
-		query = `
-			SELECT strftime('%Y', ended_at, 'localtime'),
-			       COALESCE(SUM(table_charge),0), COALESCE(SUM(fnb_charge),0),
-			       COALESCE(SUM(total_amount),0), COUNT(*)
-			FROM sessions WHERE status='completed'
+		query = fmt.Sprintf(`
+			SELECT strftime('%%Y', dt, 'localtime'),
+			       COALESCE(SUM(tc),0), COALESCE(SUM(fc),0),
+			       COALESCE(SUM(tot),0), COUNT(*)
+			FROM (
+			  SELECT ended_at AS dt, table_charge AS tc, fnb_charge AS fc, total_amount AS tot
+			  FROM sessions s WHERE s.status='completed' %s
+			  UNION ALL
+			  SELECT created_at AS dt, 0 AS tc, total AS fc, total AS tot
+			  FROM walkin_orders w WHERE 1=1 %s
+			)
 			GROUP BY 1 ORDER BY 1
-		`
+		`, sFilter, wFilter)
 	default:
 		return nil, nil
 	}
@@ -79,9 +119,9 @@ func fetchSummaries(db *sql.DB, period string, year, month int) ([]models.Financ
 		case "weekly":
 			s.Period = raw
 		case "monthly":
-			m, _ := strconv.Atoi(raw)
-			if m >= 1 && m <= 12 {
-				s.Period = monthNames[m-1]
+			mn, _ := strconv.Atoi(raw)
+			if mn >= 1 && mn <= 12 {
+				s.Period = monthNames[mn-1]
 			} else {
 				s.Period = raw
 			}

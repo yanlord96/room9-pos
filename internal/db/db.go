@@ -112,6 +112,7 @@ func alterSessions(db *sql.DB) {
 	db.Exec(`ALTER TABLE sessions ADD COLUMN payment_method TEXT NOT NULL DEFAULT 'cash'`)
 	db.Exec(`ALTER TABLE users ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP`)
 	db.Exec(`ALTER TABLE menu_items ADD COLUMN stock INTEGER NOT NULL DEFAULT -1`)
+	db.Exec(`ALTER TABLE orders ADD COLUMN note TEXT NOT NULL DEFAULT ''`)
 	db.Exec(`CREATE TABLE IF NOT EXISTS expenses (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		amount REAL NOT NULL,
