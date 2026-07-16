@@ -374,28 +374,113 @@ func (h *Handler) APIOrderCreate(c *gin.Context) {
 		return
 	}
 
+	// Merge into existing unsent order for same item + note, otherwise insert new
+	var existingID, existingQty int
+	merging := h.db.QueryRow(
+		`SELECT id, quantity FROM orders WHERE session_id=? AND menu_item_id=? AND note=? AND kitchen_sent=0`,
+		body.SessionID, body.MenuItemID, body.Note,
+	).Scan(&existingID, &existingQty) == nil
+
 	tx, _ := h.db.Begin()
-	res, err := tx.Exec(
-		`INSERT INTO orders (session_id, menu_item_id, quantity, unit_price, note) VALUES (?, ?, ?, ?, ?)`,
-		body.SessionID, body.MenuItemID, body.Quantity, price, body.Note,
-	)
-	if err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add order"})
-		return
+	var orderID int64
+	if merging {
+		tx.Exec(`UPDATE orders SET quantity=? WHERE id=?`, existingQty+body.Quantity, existingID)
+		orderID = int64(existingID)
+	} else {
+		res, err := tx.Exec(
+			`INSERT INTO orders (session_id, menu_item_id, quantity, unit_price, note) VALUES (?, ?, ?, ?, ?)`,
+			body.SessionID, body.MenuItemID, body.Quantity, price, body.Note,
+		)
+		if err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add order"})
+			return
+		}
+		orderID, _ = res.LastInsertId()
 	}
 	if stock != -1 {
 		tx.Exec(`UPDATE menu_items SET stock=stock-?, updated_at=CURRENT_TIMESTAMP WHERE id=?`, body.Quantity, body.MenuItemID)
 	}
 	tx.Commit()
-	id, _ := res.LastInsertId()
 
 	var o models.Order
 	h.db.QueryRow(`
 		SELECT o.id, o.session_id, o.menu_item_id, o.quantity, o.unit_price, o.note, o.created_at, m.name, m.category
-		FROM orders o JOIN menu_items m ON m.id=o.menu_item_id WHERE o.id=?`, id).
+		FROM orders o JOIN menu_items m ON m.id=o.menu_item_id WHERE o.id=?`, orderID).
 		Scan(&o.ID, &o.SessionID, &o.MenuItemID, &o.Quantity, &o.UnitPrice, &o.Note, &o.CreatedAt, &o.ItemName, &o.ItemCategory)
 	c.JSON(http.StatusCreated, o)
+}
+
+func (h *Handler) APIKitchenSend(c *gin.Context) {
+	id := c.Param("id")
+
+	tx, err := h.db.Begin()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "DB error"})
+		return
+	}
+
+	rows, err := tx.Query(`
+		SELECT o.id, o.quantity, o.unit_price, o.note, o.created_at, m.name, m.category
+		FROM orders o JOIN menu_items m ON m.id = o.menu_item_id
+		WHERE o.session_id = ? AND o.kitchen_sent = 0
+		ORDER BY o.created_at
+	`, id)
+	if err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "DB error"})
+		return
+	}
+
+	orders := []models.Order{}
+	var ids []int
+	for rows.Next() {
+		var o models.Order
+		rows.Scan(&o.ID, &o.Quantity, &o.UnitPrice, &o.Note, &o.CreatedAt, &o.ItemName, &o.ItemCategory)
+		orders = append(orders, o)
+		ids = append(ids, o.ID)
+	}
+	rows.Close()
+
+	for _, oid := range ids {
+		tx.Exec(`UPDATE orders SET kitchen_sent = 1 WHERE id = ?`, oid)
+	}
+
+	if err := tx.Commit(); err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "DB error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"orders": orders})
+}
+
+func (h *Handler) APIBookingExtend(c *gin.Context) {
+	id := c.Param("id")
+	var body struct {
+		AddMinutes int `json:"add_minutes" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil || body.AddMinutes <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "add_minutes must be positive"})
+		return
+	}
+
+	var billingType string
+	h.db.QueryRow(`SELECT billing_type FROM sessions WHERE id = ? AND status = 'active'`, id).Scan(&billingType)
+	if billingType != "fixed" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Only fixed sessions can be extended"})
+		return
+	}
+
+	_, err := h.db.Exec(`UPDATE sessions SET duration_minutes = duration_minutes + ? WHERE id = ?`, body.AddMinutes, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to extend session"})
+		return
+	}
+
+	var newDuration int
+	h.db.QueryRow(`SELECT duration_minutes FROM sessions WHERE id = ?`, id).Scan(&newDuration)
+	c.JSON(http.StatusOK, gin.H{"ok": true, "duration_minutes": newDuration})
 }
 
 func (h *Handler) APIOrderDelete(c *gin.Context) {

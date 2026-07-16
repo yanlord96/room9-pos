@@ -87,6 +87,8 @@ func main() {
 			auth.POST("/bookings/start", h.APIBookingStart)
 			auth.GET("/bookings/:id", h.APIBookingDetail)
 			auth.POST("/bookings/:id/end", h.APIBookingEnd)
+			auth.POST("/bookings/:id/extend", h.APIBookingExtend)
+			auth.POST("/bookings/:id/kitchen", h.APIKitchenSend)
 			auth.GET("/bookings/:id/receipt", h.APIBookingReceipt)
 
 			auth.POST("/orders", h.APIOrderCreate)

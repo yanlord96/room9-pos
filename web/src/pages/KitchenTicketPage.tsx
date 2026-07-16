@@ -1,6 +1,7 @@
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { bookingsApi } from '@/lib/api'
+import { bookingsApi, type Order } from '@/lib/api'
 import { ArrowLeft, Printer } from 'lucide-react'
 import { formatDateTime } from '@/lib/utils'
 
@@ -29,11 +30,21 @@ const kitchenPrintStyle = `
 export default function KitchenTicketPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [newOrders, setNewOrders] = useState<Order[] | null>(null)
+  const [sending, setSending] = useState(true)
 
-  const { data, isLoading } = useQuery({
+  const { data: sessionData, isLoading: sessionLoading } = useQuery({
     queryKey: ['session', Number(id)],
     queryFn: () => bookingsApi.detail(Number(id)),
   })
+
+  useEffect(() => {
+    bookingsApi.kitchen(Number(id))
+      .then((res) => setNewOrders(res.orders))
+      .finally(() => setSending(false))
+  }, [id])
+
+  const isLoading = sessionLoading || sending
 
   if (isLoading) return (
     <div className="flex h-screen items-center justify-center">
@@ -41,8 +52,8 @@ export default function KitchenTicketPage() {
     </div>
   )
 
-  const { session, orders } = data!
-  const fnbOrders = orders.filter((o) => o.item_category !== undefined)
+  const session = sessionData!.session
+  const orders = newOrders ?? []
   const now = new Date()
 
   return (
@@ -55,7 +66,7 @@ export default function KitchenTicketPage() {
           <ArrowLeft className="h-4 w-4" />
           Back
         </button>
-        <button onClick={() => window.print()} className="btn-primary btn-sm">
+        <button onClick={() => window.print()} className="btn-primary btn-sm" disabled={orders.length === 0}>
           <Printer className="h-4 w-4" />
           Print Kitchen Ticket
         </button>
@@ -88,11 +99,13 @@ export default function KitchenTicketPage() {
         <div className="border-t-2 border-dashed border-gray-400 my-3" />
 
         {/* Orders */}
-        {fnbOrders.length === 0 ? (
-          <p className="text-center text-gray-400 py-4 text-sm">Tidak ada pesanan</p>
+        {orders.length === 0 ? (
+          <p className="text-center text-gray-400 py-4 text-sm print:text-gray-500">
+            Tidak ada pesanan baru
+          </p>
         ) : (
           <div className="space-y-3">
-            {fnbOrders.map((o) => (
+            {orders.map((o) => (
               <div key={o.id} className="flex items-start gap-2">
                 <span className="text-2xl font-black min-w-[2rem] text-center leading-none">{o.quantity}x</span>
                 <div>
@@ -109,7 +122,9 @@ export default function KitchenTicketPage() {
 
         <div className="border-t-2 border-dashed border-gray-400 mt-3 pt-3">
           <p className="text-center text-xs text-gray-500">
-            {fnbOrders.reduce((sum, o) => sum + o.quantity, 0)} item · Segera diproses
+            {orders.length === 0
+              ? 'Semua pesanan sudah dikirim'
+              : `${orders.reduce((sum, o) => sum + o.quantity, 0)} item · Segera diproses`}
           </p>
         </div>
       </div>

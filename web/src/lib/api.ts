@@ -85,6 +85,13 @@ export const bookingsApi = {
       body: JSON.stringify({ payment_method }),
     }),
   receipt: (id: number) => request<ReceiptData>(`/bookings/${id}/receipt`),
+  extend: (id: number, addMinutes: number) =>
+    request<{ ok: boolean; duration_minutes: number }>(`/bookings/${id}/extend`, {
+      method: 'POST',
+      body: JSON.stringify({ add_minutes: addMinutes }),
+    }),
+  kitchen: (id: number) =>
+    request<{ orders: Order[] }>(`/bookings/${id}/kitchen`, { method: 'POST' }),
 }
 
 // ── Orders ────────────────────────────────────────────────────────────────────

@@ -7,7 +7,7 @@ import { useSessionTimer } from '@/hooks/useSessionTimer'
 import { useAuth } from '@/hooks/useAuth'
 import {
   ArrowLeft, Square, Plus, Minus, Trash2, ShoppingCart,
-  Clock, User, Table2, X, Banknote, QrCode, Building2, UtensilsCrossed,
+  Clock, User, Table2, X, Banknote, QrCode, Building2, UtensilsCrossed, TimerReset,
 } from 'lucide-react'
 
 export default function SessionDetailPage() {
@@ -22,6 +22,12 @@ export default function SessionDetailPage() {
   })
 
   const [paymentModal, setPaymentModal] = useState(false)
+  const [extendModal, setExtendModal] = useState(false)
+
+  const extendSession = useMutation({
+    mutationFn: (addMinutes: number) => bookingsApi.extend(sessionId, addMinutes),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['session', sessionId] }),
+  })
 
   const endSession = useMutation({
     mutationFn: (paymentMethod: string) => bookingsApi.end(sessionId, paymentMethod),
@@ -89,6 +95,15 @@ export default function SessionDetailPage() {
             </span>
           </p>
         </div>
+        {session.billing_type === 'fixed' && (
+          <button
+            onClick={() => setExtendModal(true)}
+            className="btn-secondary"
+          >
+            <TimerReset className="h-4 w-4" />
+            Extend
+          </button>
+        )}
         <button
           onClick={() => setPaymentModal(true)}
           disabled={endSession.isPending}
@@ -142,6 +157,14 @@ export default function SessionDetailPage() {
             )}
           </div>
         </div>
+
+        {extendModal && (
+          <ExtendModal
+            isPending={extendSession.isPending}
+            onConfirm={(mins) => extendSession.mutate(mins, { onSuccess: () => setExtendModal(false) })}
+            onClose={() => setExtendModal(false)}
+          />
+        )}
 
         {paymentModal && (
         <PaymentModal
@@ -265,6 +288,57 @@ function MenuItemCard({
           <ShoppingCart className="h-3 w-3" />
           {outOfStock ? 'Habis' : 'Add'}
         </button>
+      </div>
+    </div>
+  )
+}
+
+function ExtendModal({ isPending, onConfirm, onClose }: {
+  isPending: boolean
+  onConfirm: (minutes: number) => void
+  onClose: () => void
+}) {
+  const [custom, setCustom] = useState('')
+  const presets = [30, 60, 90, 120]
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="card w-full max-w-sm p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold text-white">Extend Session</h2>
+          <button onClick={onClose} className="btn-ghost p-1.5"><X className="h-4 w-4" /></button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          {presets.map((m) => (
+            <button
+              key={m}
+              onClick={() => onConfirm(m)}
+              disabled={isPending}
+              className="btn-secondary py-3 text-sm font-semibold"
+            >
+              +{m < 60 ? `${m} menit` : `${m / 60} jam`}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min={1}
+            placeholder="Menit custom..."
+            value={custom}
+            onChange={(e) => setCustom(e.target.value)}
+            className="input flex-1 text-sm"
+          />
+          <button
+            onClick={() => { const m = parseInt(custom); if (m > 0) onConfirm(m) }}
+            disabled={isPending || !custom || parseInt(custom) <= 0}
+            className="btn-primary btn-sm px-4"
+          >
+            Tambah
+          </button>
+        </div>
       </div>
     </div>
   )
