@@ -236,20 +236,36 @@ func (h *Handler) APIPaymentList(c *gin.Context) {
 		Type          string     `json:"type"` // "table" or "walkin"
 	}
 
+	year := c.Query("year")
+	month := c.Query("month")
+
+	var sessionFilter, walkinFilter string
+	var sessionArgs, walkinArgs []interface{}
+
+	if year != "" && month != "" {
+		sessionFilter = `AND strftime('%Y', s.ended_at, 'localtime') = ? AND strftime('%m', s.ended_at, 'localtime') = ?`
+		sessionArgs = []interface{}{year, month}
+		walkinFilter = `AND strftime('%Y', w.created_at, 'localtime') = ? AND strftime('%m', w.created_at, 'localtime') = ?`
+		walkinArgs = []interface{}{year, month}
+	} else if year != "" {
+		sessionFilter = `AND strftime('%Y', s.ended_at, 'localtime') = ?`
+		sessionArgs = []interface{}{year}
+		walkinFilter = `AND strftime('%Y', w.created_at, 'localtime') = ?`
+		walkinArgs = []interface{}{year}
+	}
+
 	payments := []Payment{}
 
-	// Table sessions
-	rows, err := h.db.Query(`
+	rows, err := h.db.Query(fmt.Sprintf(`
 		SELECT s.id, s.started_at, s.ended_at, s.table_charge, s.fnb_charge,
 		       s.total_amount, s.payment_method, s.billing_type,
 		       t.name, cu.name, cu.phone
 		FROM sessions s
 		JOIN pool_tables t ON t.id = s.table_id
 		JOIN customers cu ON cu.id = s.customer_id
-		WHERE s.status = 'completed'
-		ORDER BY s.ended_at DESC
-		LIMIT 200
-	`)
+		WHERE s.status = 'completed' %s
+		ORDER BY s.ended_at DESC LIMIT 500
+	`, sessionFilter), sessionArgs...)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -264,14 +280,13 @@ func (h *Handler) APIPaymentList(c *gin.Context) {
 		payments = append(payments, p)
 	}
 
-	// Walk-in orders
-	wrows, err := h.db.Query(`
+	wrows, err := h.db.Query(fmt.Sprintf(`
 		SELECT w.id, w.created_at, w.total, w.payment_method, COALESCE(u.name,'')
 		FROM walkin_orders w
 		LEFT JOIN users u ON u.id = w.created_by
-		ORDER BY w.created_at DESC
-		LIMIT 200
-	`)
+		WHERE 1=1 %s
+		ORDER BY w.created_at DESC LIMIT 500
+	`, walkinFilter), walkinArgs...)
 	if err == nil {
 		defer wrows.Close()
 		for wrows.Next() {
@@ -284,16 +299,12 @@ func (h *Handler) APIPaymentList(c *gin.Context) {
 		}
 	}
 
-	// Sort by started_at desc
 	for i := 0; i < len(payments)-1; i++ {
 		for j := i + 1; j < len(payments); j++ {
 			if payments[j].StartedAt.After(payments[i].StartedAt) {
 				payments[i], payments[j] = payments[j], payments[i]
 			}
 		}
-	}
-	if len(payments) > 200 {
-		payments = payments[:200]
 	}
 
 	c.JSON(http.StatusOK, gin.H{"payments": payments})

@@ -115,7 +115,12 @@ export const usersApi = {
 
 // ── Payments ──────────────────────────────────────────────────────────────────
 export const paymentsApi = {
-  list: () => request<{ payments: Payment[] }>('/payments'),
+  list: (year?: number, month?: number) => {
+    const params = year && month
+      ? `?year=${year}&month=${String(month).padStart(2, '0')}`
+      : year ? `?year=${year}` : ''
+    return request<{ payments: Payment[] }>(`/payments${params}`)
+  },
   deleteSession: (id: number, password: string) =>
     request<{ ok: boolean }>(`/payments/session/${id}`, { method: 'DELETE', body: JSON.stringify({ password }) }),
   deleteWalkin: (id: number, password: string) =>

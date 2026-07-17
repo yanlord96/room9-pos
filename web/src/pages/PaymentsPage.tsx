@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { paymentsApi, type Payment } from '@/lib/api'
 import { formatRp, formatDateTime } from '@/lib/utils'
-import { Banknote, QrCode, Building2, Receipt, Trash2, Eye, EyeOff, X } from 'lucide-react'
+import { Banknote, QrCode, Building2, Receipt, Trash2, Eye, EyeOff, X, ChevronLeft, ChevronRight } from 'lucide-react'
 
 const METHOD_STYLE: Record<string, { label: string; cls: string; icon: React.ElementType }> = {
   cash:     { label: 'Cash',     cls: 'badge-green',  icon: Banknote  },
@@ -11,14 +11,20 @@ const METHOD_STYLE: Record<string, { label: string; cls: string; icon: React.Ele
   transfer: { label: 'Transfer', cls: 'badge bg-blue-900/50 text-blue-400 border border-blue-800',       icon: Building2 },
 }
 
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+
 export default function PaymentsPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+
+  const now = new Date()
+  const [year, setYear] = useState(now.getFullYear())
+  const [month, setMonth] = useState(now.getMonth() + 1)
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; type: 'table' | 'walkin' } | null>(null)
 
   const { data, isLoading } = useQuery({
-    queryKey: ['payments'],
-    queryFn: paymentsApi.list,
+    queryKey: ['payments', year, month],
+    queryFn: () => paymentsApi.list(year, month),
     staleTime: 0,
   })
 
@@ -32,11 +38,36 @@ export default function PaymentsPage() {
     return acc
   }, {})
 
+  const prevMonth = () => {
+    if (month === 1) { setMonth(12); setYear(y => y - 1) }
+    else setMonth(m => m - 1)
+  }
+  const nextMonth = () => {
+    if (month === 12) { setMonth(1); setYear(y => y + 1) }
+    else setMonth(m => m + 1)
+  }
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
+
   return (
     <div className="p-6 space-y-5">
-      <div>
-        <h1 className="text-xl font-semibold text-white">Payments</h1>
-        <p className="text-sm text-gray-500">{payments.length} completed transactions</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-white">Payments</h1>
+          <p className="text-sm text-gray-500">{payments.length} transactions</p>
+        </div>
+
+        {/* Month picker */}
+        <div className="flex items-center gap-2 bg-gray-900 border border-gray-800 rounded-lg px-3 py-2">
+          <button onClick={prevMonth} className="btn-ghost p-1">
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <span className="text-sm font-medium text-white w-28 text-center">
+            {MONTH_NAMES[month - 1]} {year}
+          </span>
+          <button onClick={nextMonth} disabled={isCurrentMonth} className="btn-ghost p-1 disabled:opacity-30">
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {/* Summary cards */}
@@ -51,7 +82,7 @@ export default function PaymentsPage() {
                   <Icon className="h-4 w-4 text-gray-400" />
                   <span className="text-xs font-medium text-gray-400">{label}</span>
                 </div>
-                <p className="text-lg font-bold text-white">{formatRp(Math.ceil(s.total / 1000) * 1000)}</p>
+                <p className="text-lg font-bold text-white">{formatRp(s.total)}</p>
                 <p className="text-xs text-gray-500">{s.count} transaction{s.count !== 1 ? 's' : ''}</p>
               </div>
             )
@@ -88,7 +119,7 @@ export default function PaymentsPage() {
               <tr>
                 <td colSpan={9} className="px-4 py-12 text-center text-gray-600">
                   <Receipt className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                  No payments yet
+                  Tidak ada transaksi di {MONTH_NAMES[month - 1]} {year}
                 </td>
               </tr>
             ) : (
