@@ -259,10 +259,10 @@ func (h *Handler) APIPaymentList(c *gin.Context) {
 	rows, err := h.db.Query(fmt.Sprintf(`
 		SELECT s.id, s.started_at, s.ended_at, s.table_charge, s.fnb_charge,
 		       s.total_amount, s.payment_method, s.billing_type,
-		       t.name, cu.name, cu.phone
+		       COALESCE(t.name,'(meja dihapus)'), COALESCE(cu.name,'(pelanggan dihapus)'), COALESCE(cu.phone,'')
 		FROM sessions s
-		JOIN pool_tables t ON t.id = s.table_id
-		JOIN customers cu ON cu.id = s.customer_id
+		LEFT JOIN pool_tables t ON t.id = s.table_id
+		LEFT JOIN customers cu ON cu.id = s.customer_id
 		WHERE s.status = 'completed' %s
 		ORDER BY s.ended_at DESC LIMIT 500
 	`, sessionFilter), sessionArgs...)
