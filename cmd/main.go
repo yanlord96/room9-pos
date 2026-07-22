@@ -88,6 +88,7 @@ func main() {
 			auth.GET("/bookings/:id", h.APIBookingDetail)
 			auth.POST("/bookings/:id/end", h.APIBookingEnd)
 			auth.POST("/bookings/:id/extend", h.APIBookingExtend)
+			auth.POST("/bookings/:id/transfer", h.APIBookingTransfer)
 			auth.POST("/bookings/:id/kitchen", h.APIKitchenSend)
 			auth.GET("/bookings/:id/receipt", h.APIBookingReceipt)
 
@@ -108,6 +109,7 @@ func main() {
 				admin.DELETE("/payments/session/:id", h.APIDeleteSession)
 				admin.DELETE("/payments/walkin/:id", h.APIDeleteWalkin)
 				admin.GET("/charts", h.APICharts)
+				admin.GET("/analytics", h.APIAnalytics)
 				admin.GET("/expenses", h.APIExpenseList)
 				admin.POST("/expenses", h.APIExpenseCreate)
 				admin.PUT("/expenses/:id", h.APIExpenseUpdate)

@@ -1,0 +1,20 @@
+# Database (runtime data — never commit)
+data/*.db
+data/*.db-shm
+data/*.db-wal
+
+# Dependencies
+node_modules/
+web/node_modules/
+
+# Build output
+web/dist/
+room9
+
+# Env & secrets
+.env
+*.local
+
+# OS / editor
+.DS_Store
+*.swp

@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { bookingsApi, ordersApi, type MenuItem, type Order } from '@/lib/api'
+import { bookingsApi, ordersApi, tablesApi, type MenuItem, type Order } from '@/lib/api'
 import { formatRp, formatDateTime } from '@/lib/utils'
 import { useSessionTimer } from '@/hooks/useSessionTimer'
 import { useAuth } from '@/hooks/useAuth'
 import {
   ArrowLeft, Square, Plus, Minus, Trash2, ShoppingCart,
-  Clock, User, Table2, X, Banknote, QrCode, Building2, UtensilsCrossed, TimerReset,
+  Clock, User, Table2, X, Banknote, QrCode, Building2, UtensilsCrossed, TimerReset, ArrowRightLeft,
 } from 'lucide-react'
 
 export default function SessionDetailPage() {
@@ -23,10 +23,20 @@ export default function SessionDetailPage() {
 
   const [paymentModal, setPaymentModal] = useState(false)
   const [extendModal, setExtendModal] = useState(false)
+  const [transferModal, setTransferModal] = useState(false)
 
   const extendSession = useMutation({
     mutationFn: (addMinutes: number) => bookingsApi.extend(sessionId, addMinutes),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['session', sessionId] }),
+  })
+
+  const transfer = useMutation({
+    mutationFn: (tableId: number) => bookingsApi.transfer(sessionId, tableId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['session', sessionId] })
+      qc.invalidateQueries({ queryKey: ['bookings'] })
+      qc.invalidateQueries({ queryKey: ['tables'] })
+    },
   })
 
   const endSession = useMutation({
@@ -95,6 +105,13 @@ export default function SessionDetailPage() {
             </span>
           </p>
         </div>
+        <button
+          onClick={() => setTransferModal(true)}
+          className="btn-secondary"
+        >
+          <ArrowRightLeft className="h-4 w-4" />
+          Pindah Meja
+        </button>
         {session.billing_type === 'fixed' && (
           <button
             onClick={() => setExtendModal(true)}
@@ -163,6 +180,16 @@ export default function SessionDetailPage() {
             isPending={extendSession.isPending}
             onConfirm={(mins) => extendSession.mutate(mins, { onSuccess: () => setExtendModal(false) })}
             onClose={() => setExtendModal(false)}
+          />
+        )}
+
+        {transferModal && (
+          <TransferModal
+            currentTableId={session.table_id}
+            isPending={transfer.isPending}
+            error={transfer.error?.message}
+            onConfirm={(tableId) => transfer.mutate(tableId, { onSuccess: () => setTransferModal(false) })}
+            onClose={() => setTransferModal(false)}
           />
         )}
 
@@ -288,6 +315,53 @@ function MenuItemCard({
           <ShoppingCart className="h-3 w-3" />
           {outOfStock ? 'Habis' : 'Add'}
         </button>
+      </div>
+    </div>
+  )
+}
+
+function TransferModal({ currentTableId, isPending, error, onConfirm, onClose }: {
+  currentTableId: number
+  isPending: boolean
+  error?: string
+  onConfirm: (tableId: number) => void
+  onClose: () => void
+}) {
+  const { data, isLoading } = useQuery({ queryKey: ['tables'], queryFn: tablesApi.list })
+  const available = (data?.tables ?? []).filter((t) => t.status === 'available' && t.id !== currentTableId)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="card w-full max-w-sm p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-white">Pindah Meja</h2>
+            <p className="text-xs text-gray-500 mt-0.5">Pilih meja kosong tujuan. Bill tetap berjalan.</p>
+          </div>
+          <button onClick={onClose} className="btn-ghost p-1.5"><X className="h-4 w-4" /></button>
+        </div>
+
+        {isLoading ? (
+          <p className="text-sm text-gray-500 text-center py-4">Memuat meja…</p>
+        ) : available.length === 0 ? (
+          <p className="text-sm text-gray-500 text-center py-4">Tidak ada meja kosong</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+            {available.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => onConfirm(t.id)}
+                disabled={isPending}
+                className="btn-secondary py-3 flex flex-col items-center gap-0.5 disabled:opacity-50"
+              >
+                <span className="text-sm font-semibold text-white">{t.name}</span>
+                <span className="text-xs text-gray-500">{formatRp(t.hourly_rate)}/jam</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {error && <p className="text-xs text-red-400">{error}</p>}
       </div>
     </div>
   )

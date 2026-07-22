@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -299,13 +300,9 @@ func (h *Handler) APIPaymentList(c *gin.Context) {
 		}
 	}
 
-	for i := 0; i < len(payments)-1; i++ {
-		for j := i + 1; j < len(payments); j++ {
-			if payments[j].StartedAt.After(payments[i].StartedAt) {
-				payments[i], payments[j] = payments[j], payments[i]
-			}
-		}
-	}
+	sort.Slice(payments, func(i, j int) bool {
+		return payments[i].StartedAt.After(payments[j].StartedAt)
+	})
 
 	c.JSON(http.StatusOK, gin.H{"payments": payments})
 }
@@ -422,6 +419,55 @@ func (h *Handler) APIOrderCreate(c *gin.Context) {
 	c.JSON(http.StatusCreated, o)
 }
 
+func (h *Handler) APIBookingTransfer(c *gin.Context) {
+	id := c.Param("id")
+	var body struct {
+		TableID int `json:"table_id" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil || body.TableID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "table_id required"})
+		return
+	}
+
+	var oldTableID int
+	var status string
+	err := h.db.QueryRow(`SELECT table_id, status FROM sessions WHERE id = ?`, id).Scan(&oldTableID, &status)
+	if err != nil || status != "active" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Sesi tidak aktif"})
+		return
+	}
+	if oldTableID == body.TableID {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Sesi sudah di meja ini"})
+		return
+	}
+
+	var targetStatus string
+	if err := h.db.QueryRow(`SELECT status FROM pool_tables WHERE id = ?`, body.TableID).Scan(&targetStatus); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Meja tujuan tidak ada"})
+		return
+	}
+	if targetStatus != "available" {
+		c.JSON(http.StatusConflict, gin.H{"error": "Meja tujuan sedang terpakai"})
+		return
+	}
+
+	tx, err := h.db.Begin()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "DB error"})
+		return
+	}
+	tx.Exec(`UPDATE pool_tables SET status='available', updated_at=CURRENT_TIMESTAMP WHERE id=?`, oldTableID)
+	tx.Exec(`UPDATE sessions SET table_id=? WHERE id=?`, body.TableID, id)
+	tx.Exec(`UPDATE pool_tables SET status='occupied', updated_at=CURRENT_TIMESTAMP WHERE id=?`, body.TableID)
+	if err := tx.Commit(); err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "DB error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
 func (h *Handler) APIKitchenSend(c *gin.Context) {
 	id := c.Param("id")
 
@@ -444,18 +490,15 @@ func (h *Handler) APIKitchenSend(c *gin.Context) {
 	}
 
 	orders := []models.Order{}
-	var ids []int
 	for rows.Next() {
 		var o models.Order
 		rows.Scan(&o.ID, &o.Quantity, &o.UnitPrice, &o.Note, &o.CreatedAt, &o.ItemName, &o.ItemCategory)
 		orders = append(orders, o)
-		ids = append(ids, o.ID)
 	}
 	rows.Close()
 
-	for _, oid := range ids {
-		tx.Exec(`UPDATE orders SET kitchen_sent = 1 WHERE id = ?`, oid)
-	}
+	// Same predicate as the SELECT above; serialized in one tx so it marks exactly those rows
+	tx.Exec(`UPDATE orders SET kitchen_sent = 1 WHERE session_id = ? AND kitchen_sent = 0`, id)
 
 	if err := tx.Commit(); err != nil {
 		tx.Rollback()

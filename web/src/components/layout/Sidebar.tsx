@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, UtensilsCrossed,
-  Table2, BarChart3, LogOut, Circle, CreditCard, ShieldCheck, Tv2, Wallet, ShoppingBag,
+  Table2, BarChart3, LogOut, Circle, CreditCard, ShieldCheck, Tv2, Wallet, ShoppingBag, TrendingUp,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useQueryClient, useMutation } from '@tanstack/react-query'
@@ -21,6 +21,7 @@ const adminNav = [
   { to: '/payments', label: 'Payments', icon: CreditCard },
   { to: '/expenses', label: 'Expenses', icon: Wallet },
   { to: '/reports', label: 'Reports', icon: BarChart3 },
+  { to: '/analytics', label: 'Analytics', icon: TrendingUp },
   { to: '/users', label: 'Users', icon: ShieldCheck },
 ]
 

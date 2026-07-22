@@ -92,6 +92,11 @@ export const bookingsApi = {
     }),
   kitchen: (id: number) =>
     request<{ orders: Order[] }>(`/bookings/${id}/kitchen`, { method: 'POST' }),
+  transfer: (id: number, tableId: number) =>
+    request<{ ok: boolean }>(`/bookings/${id}/transfer`, {
+      method: 'POST',
+      body: JSON.stringify({ table_id: tableId }),
+    }),
 }
 
 // ── Orders ────────────────────────────────────────────────────────────────────
@@ -161,6 +166,12 @@ export const expensesApi = {
 export const chartsApi = {
   get: (year: number, month: number) =>
     request<ChartData>(`/charts?year=${year}&month=${month}`),
+}
+
+// ── Analytics ─────────────────────────────────────────────────────────────────
+export const analyticsApi = {
+  get: (year: number, month: number) =>
+    request<AnalyticsData>(`/analytics?year=${year}&month=${month}`),
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -321,6 +332,29 @@ export type ChartData = {
   per_hour: HourStat[]
   year: number
   month: number
+}
+
+export type TableUsage = {
+  table_name: string
+  sessions: number
+  total_hours: number
+  avg_hours_per_use: number
+  active_days: number
+  avg_hours_per_day: number
+}
+
+export type ProductSale = {
+  item_name: string
+  item_category: string
+  qty_sold: number
+  revenue: number
+}
+
+export type AnalyticsData = {
+  year: number
+  month: number
+  table_usage: TableUsage[]
+  product_sales: ProductSale[]
 }
 
 export type ReportData = {
