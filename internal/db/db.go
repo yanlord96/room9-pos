@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	_ "modernc.org/sqlite"
 )
@@ -14,11 +15,17 @@ func Init(path string) (*sql.DB, error) {
 		return nil, fmt.Errorf("create data dir: %w", err)
 	}
 
-	database, err := sql.Open("sqlite", path+"?_journal_mode=WAL&_foreign_keys=on")
+	// modernc.org/sqlite uses _pragma=... DSN params (NOT mattn's _journal_mode=...).
+	// WAL lets reads run concurrently with writes; busy_timeout avoids "database is locked".
+	dsn := path + "?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_pragma=foreign_keys(1)&_pragma=synchronous(NORMAL)"
+	database, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("open db: %w", err)
 	}
 	database.SetMaxOpenConns(1)
+
+	// Fold any bloated WAL from before back into the main db file
+	database.Exec(`PRAGMA wal_checkpoint(TRUNCATE)`)
 
 	if err := migrate(database); err != nil {
 		return nil, fmt.Errorf("migrate: %w", err)
@@ -27,6 +34,10 @@ func Init(path string) (*sql.DB, error) {
 	if err := seed(database); err != nil {
 		return nil, fmt.Errorf("seed: %w", err)
 	}
+
+	// Drop expired login sessions so the table doesn't grow unbounded
+	database.Exec(`DELETE FROM app_sessions WHERE expires_at < ?`, time.Now().UTC().Format("2006-01-02 15:04:05"))
+
 	return database, nil
 }
 
