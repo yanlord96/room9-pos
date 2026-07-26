@@ -121,7 +121,9 @@ func alterSessions(db *sql.DB) {
 	db.Exec(`ALTER TABLE sessions ADD COLUMN billing_type TEXT NOT NULL DEFAULT 'open'`)
 	db.Exec(`ALTER TABLE sessions ADD COLUMN duration_minutes INTEGER NOT NULL DEFAULT 0`)
 	db.Exec(`ALTER TABLE sessions ADD COLUMN payment_method TEXT NOT NULL DEFAULT 'cash'`)
-	db.Exec(`ALTER TABLE users ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP`)
+	// NOTE: SQLite forbids ADD COLUMN with a non-constant default (CURRENT_TIMESTAMP),
+	// so this must be a plain column — the UPDATE statements set updated_at explicitly.
+	db.Exec(`ALTER TABLE users ADD COLUMN updated_at DATETIME`)
 	db.Exec(`ALTER TABLE menu_items ADD COLUMN stock INTEGER NOT NULL DEFAULT -1`)
 	db.Exec(`ALTER TABLE orders ADD COLUMN note TEXT NOT NULL DEFAULT ''`)
 	db.Exec(`ALTER TABLE orders ADD COLUMN kitchen_sent INTEGER NOT NULL DEFAULT 0`)

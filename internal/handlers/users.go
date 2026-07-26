@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"net/http"
 
 	"room9/internal/middleware"
@@ -87,26 +88,37 @@ func (h *Handler) APIUserUpdate(c *gin.Context) {
 		return
 	}
 	// Prevent demoting yourself
-	if me != nil && string(rune(me.ID)) == id && body.Role != "admin" {
+	if me != nil && me.ID == mustInt(id) && body.Role != "admin" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot change your own role"})
 		return
 	}
 
+	var res sql.Result
+	var err error
 	if body.Password != "" {
 		if len(body.Password) < 6 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Password must be at least 6 characters"})
 			return
 		}
-		hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)
+		var hash []byte
+		hash, err = bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
 			return
 		}
-		h.db.Exec(`UPDATE users SET name=?, role=?, password_hash=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
+		res, err = h.db.Exec(`UPDATE users SET name=?, role=?, password_hash=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
 			body.Name, body.Role, string(hash), id)
 	} else {
-		h.db.Exec(`UPDATE users SET name=?, role=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
+		res, err = h.db.Exec(`UPDATE users SET name=?, role=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
 			body.Name, body.Role, id)
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user: " + err.Error()})
+		return
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
 	}
 
 	var u models.User
